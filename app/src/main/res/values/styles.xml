@@ -1,4 +1,27 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Activity themes -->
+
+    <style name="Theme.Base" parent="android:Theme.Light" tools:keep="@style/Theme_Base"></style>
+
+    <style name="Theme.Sample" parent="Theme.Base" tools:keep="@style/Theme_Sample" />
+
+    <!--<style name="AppTheme" parent="Theme.Sample" tools:keep="@style/AppTheme" />-->
+    <!-- Widget styling -->
+
+    <style name="Widget" tools:keep="@style/Widget" />
+
+    <style name="Widget.SampleMessage" tools:keep="@style/Widget_SampleMessage">
+        <item name="android:textAppearance">?android:textAppearanceMedium</item>
+        <item name="android:lineSpacingMultiplier">1.1</item>
+    </style>
+
+    <style name="Widget.SampleMessageTile" tools:keep="@style/Widget_SampleMessageTile">
+        <!--<item name="android:background">@drawable/tile</item>-->
+        <item name="android:shadowColor">#7F000000</item>
+        <item name="android:shadowDy">-3.5</item>
+        <item name="android:shadowRadius">2</item>
+    </style>
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
