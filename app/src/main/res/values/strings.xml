@@ -23,4 +23,9 @@
     <string name="menu_scan">Scan</string>
     <string name="menu_stop">Stop</string>
     <string name="menu_refresh">Refresh</string>
+    
+    <string name="title_home">Home</string>
+    <string name="title_user">User</string>
+    <string name="title_details">Details</string>
+    <string name="title_device">Device</string>
 </resources>
