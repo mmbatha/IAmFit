@@ -417,13 +417,13 @@ public class BasicHistory extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_delete_data) {
-            deleteData();
-            return true;
-        } else if (id == R.id.action_update_data) {
-            clearLogView();
-            updateAndReadData();
-        }
+//        if (id == R.id.action_delete_data) {
+//            deleteData();
+//            return true;
+//        } else if (id == R.id.action_update_data) {
+//            clearLogView();
+//            updateAndReadData();
+//        }
         return super.onOptionsItemSelected(item);
     }
 
