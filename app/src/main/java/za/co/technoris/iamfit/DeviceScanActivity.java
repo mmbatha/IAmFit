@@ -41,7 +41,7 @@ public class DeviceScanActivity extends ListActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getActionBar().setTitle(string.title_devices);
+//        getActionBar().setTitle(string.title_devices);
         mHandler = new Handler();
 
         // Use this check to determine whether BLE is supported on the device.  Then you can
@@ -102,10 +102,8 @@ public class DeviceScanActivity extends ListActivity {
         // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
         // fire an intent to display a dialog asking the user to grant permission to enable it.
         if (!mBluetoothAdapter.isEnabled()) {
-            if (!mBluetoothAdapter.isEnabled()) {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            }
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
         // Initializes list view adapter.
