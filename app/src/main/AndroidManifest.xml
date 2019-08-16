@@ -3,6 +3,7 @@
     package="za.co.technoris.iamfit">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.BODY_SENSORS"/>
     <!--<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>-->
 
     <!--<uses-permission android:name="android.permission.BLUETOOTH"/>-->
