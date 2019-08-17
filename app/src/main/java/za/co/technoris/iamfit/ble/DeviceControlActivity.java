@@ -1,4 +1,4 @@
-package za.co.technoris.iamfit;
+package za.co.technoris.iamfit.ble;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -22,6 +22,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import za.co.technoris.iamfit.R;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,

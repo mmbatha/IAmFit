@@ -1,4 +1,4 @@
-package za.co.technoris.iamfit;
+package za.co.technoris.iamfit.ble;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;

@@ -43,6 +43,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import za.co.technoris.iamfit.common.logger.Log;
@@ -61,7 +63,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class MainActivity extends AppCompatActivity {
 
+    private static final String SLEEP_SESSION_NAME = "Rest";
     private TextView mTextMessage;
+    private static final UUID UniqueID = new UUID(415452,548775);
 
     public static final String TAG = "IAMFit";
     public static final String SAMPLE_SESSION_NAME = "Joggy jog";
@@ -243,33 +247,35 @@ public class MainActivity extends AppCompatActivity {
      *  contain multiple {@link DataSet}s.
      */
     private SessionInsertRequest insertFitnessSession() {
-//        Log.i(TAG, "Creating a new sleep session");
-//        // Create the sleep session
-//        long startTime = 0;
-//        long endTime = 0;
-//        try {
-//            startTime = new SimpleDateFormat(DATE_FORMAT).parse("15/08/2019 23:58:00")
-//                    .getTime() / 1000;
-//            endTime = new SimpleDateFormat(DATE_FORMAT).parse("16/08/2019 05:02:00")
-//                    .getTime() / 1000;
-//        }
-//        catch (ParseException ex)
-//        {
-//            Log.i("Error formatting the date: ", ex.getMessage());
-//        }
-//        Session session = new Session.Builder()
-//                .setName(SAMPLE_SESSION_NAME)
-//                .setIdentifier("SuchUniqueness")
-//                .setDescription("Some much needed rest")
-//                .setStartTime(startTime, MILLISECONDS)
-//                .setEndTime(endTime, MILLISECONDS)
-//                .setActivity(FitnessActivities.SLEEP)
-//                .build();
+        Log.i(TAG, "Creating a new sleep session");
+        // Create the sleep session
+        long startTime1 = 0;
+        long endTime1 = 0;
+        try {
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
+                    .getTime() / 1000;
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
+                    .getTime() / 1000;
+        }
+        catch (ParseException ex)
+        {
+            Log.i("Error formatting the date: ", ex.getMessage());
+        }
+        Session session = new Session.Builder()
+                .setName(SLEEP_SESSION_NAME)
+                .setIdentifier(UniqueID.toString())
+                .setDescription("Some much needed rest")
+                .setStartTime(startTime1, MILLISECONDS)
+                .setEndTime(endTime1, MILLISECONDS)
+                .setActivity(FitnessActivities.SLEEP)
+                .build();
 
-//// Build the request to insert the session.
-//        SessionInsertRequest insertRequest = new SessionInsertRequest.Builder()
-//                .setSession(session)
-//                .build();
+// Build the request to insert the session.
+        SessionInsertRequest insertRequest = new SessionInsertRequest.Builder()
+                .setSession(session)
+                .build();
+
+       /* // Creating a new session for an afternoon run
         Log.i(TAG, "Creating a new session for an afternoon run");
         // Setting start and end times for our run.
         Calendar cal = Calendar.getInstance();
@@ -357,9 +363,8 @@ public class MainActivity extends AppCompatActivity {
                 .addDataSet(activitySegments)
                 .build();
         // [END build_insert_session_request]
-        // [END build_insert_session_request_with_activity_segments]
+        // [END build_insert_session_request_with_activity_segments] */
 
-//        return insertRequest;
         return insertRequest;
     }
 
@@ -367,21 +372,27 @@ public class MainActivity extends AppCompatActivity {
      * Returns a {@link SessionReadRequest} for all speed data in the past week.
      */
     private SessionReadRequest readFitnessSession() {
-        Log.i(TAG, "Reading History API results for session: " + SAMPLE_SESSION_NAME);
+        Log.i(TAG, "Reading History API results for session: " + SLEEP_SESSION_NAME);
         // [START build_read_session_request]
         // Set a start and end time for our query, using a start time of 1 week before this moment.
-        Calendar cal = Calendar.getInstance();
-        Date now = new Date();
-        cal.setTime(now);
-        long endTime = cal.getTimeInMillis();
-        cal.add(Calendar.WEEK_OF_YEAR, -1);
-        long startTime = cal.getTimeInMillis();
+        long startTime1 = 0;
+        long endTime1 = 0;
+        try {
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
+                    .getTime() / 1000;
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
+                    .getTime() / 1000;
+        }
+        catch (ParseException ex)
+        {
+            Log.i("Error formatting the date: ", ex.getMessage());
+        }
 
         // Build a session read request
         SessionReadRequest readRequest = new SessionReadRequest.Builder()
-                .setTimeInterval(startTime, endTime, MILLISECONDS)
-                .read(DataType.TYPE_SPEED)
-                .setSessionName(SAMPLE_SESSION_NAME)
+                .setTimeInterval(startTime1, endTime1, MILLISECONDS)
+                //                .addDataType(DataType.TYPE_SPEED)
+                .setSessionName(SLEEP_SESSION_NAME)
                 .build();
         // [END build_read_session_request]
 
@@ -421,17 +432,23 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "Deleting today's session data for speed");
 
         // Set a start and end time for our data, using a start time of 1 day before this moment.
-        Calendar cal = Calendar.getInstance();
-        Date now = new Date();
-        cal.setTime(now);
-        long endTime = cal.getTimeInMillis();
-        cal.add(Calendar.DAY_OF_YEAR, -1);
-        long startTime = cal.getTimeInMillis();
+        long startTime1 = 0;
+        long endTime1 = 0;
+        try {
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
+                    .getTime() / 1000;
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
+                    .getTime() / 1000;
+        }
+        catch (ParseException ex)
+        {
+            Log.i("Error formatting the date: ", ex.getMessage());
+        }
 
         // Create a delete request object, providing a data type and a time interval
         DataDeleteRequest request = new DataDeleteRequest.Builder()
-                .setTimeInterval(startTime, endTime, MILLISECONDS)
-                .addDataType(DataType.TYPE_SPEED)
+                .setTimeInterval(startTime1, endTime1, MILLISECONDS)
+//                .addDataType(DataType.TYPE_SPEED)
                 .deleteAllSessions() // Or specify a particular session here
                 .build();
 

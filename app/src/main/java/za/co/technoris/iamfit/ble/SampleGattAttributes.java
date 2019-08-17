@@ -1,4 +1,4 @@
-package za.co.technoris.iamfit;
+package za.co.technoris.iamfit.ble;
 
 import java.util.HashMap;
 

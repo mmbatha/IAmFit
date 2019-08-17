@@ -1,4 +1,4 @@
-package za.co.technoris.iamfit;
+package za.co.technoris.iamfit.ble;
 
 import android.app.Activity;
 import android.app.ListActivity;
@@ -21,6 +21,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+
+import za.co.technoris.iamfit.R;
 
 import static za.co.technoris.iamfit.R.*;
 
