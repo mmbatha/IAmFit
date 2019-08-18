@@ -52,6 +52,7 @@ import za.co.technoris.iamfit.common.logger.LogView;
 import za.co.technoris.iamfit.common.logger.LogWrapper;
 import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
 
+import static java.text.DateFormat.getDateTimeInstance;
 import static java.text.DateFormat.getTimeInstance;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -252,10 +253,10 @@ public class MainActivity extends AppCompatActivity {
         long startTime1 = 0;
         long endTime1 = 0;
         try {
-            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
-                    .getTime() / 1000;
-            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
-                    .getTime() / 1000;
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 00:23:00")
+                    .getTime();
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 05:52:00")
+                    .getTime();
         }
         catch (ParseException ex)
         {
@@ -378,10 +379,10 @@ public class MainActivity extends AppCompatActivity {
         long startTime1 = 0;
         long endTime1 = 0;
         try {
-            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
-                    .getTime() / 1000;
-            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
-                    .getTime() / 1000;
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 00:23:00")
+                    .getTime();
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 05:52:00")
+                    .getTime();
         }
         catch (ParseException ex)
         {
@@ -415,7 +416,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dumpSession(Session session) {
-        DateFormat dateFormat = getTimeInstance();
+        DateFormat dateFormat = getDateTimeInstance();
         Log.i(TAG, "Data returned for Session: " + session.getName()
                 + "\n\tDescription: " + session.getDescription()
                 + "\n\tStart: " + dateFormat.format(session.getStartTime(MILLISECONDS))
@@ -435,10 +436,10 @@ public class MainActivity extends AppCompatActivity {
         long startTime1 = 0;
         long endTime1 = 0;
         try {
-            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("15/08/2019 23:58:00")
-                    .getTime() / 1000;
-            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("16/08/2019 05:02:00")
-                    .getTime() / 1000;
+            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 00:23:00")
+                    .getTime();
+            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 05:52:00")
+                    .getTime();
         }
         catch (ParseException ex)
         {
