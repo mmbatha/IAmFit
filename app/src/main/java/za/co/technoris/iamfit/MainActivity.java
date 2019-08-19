@@ -41,8 +41,10 @@ import com.google.android.gms.tasks.Task;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -53,6 +55,9 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import za.co.technoris.iamfit.ble.HeartRate;
+import za.co.technoris.iamfit.ble.SleepDataItem;
+import za.co.technoris.iamfit.ble.SportDataDay;
 import za.co.technoris.iamfit.ble.SportDataItem;
 import za.co.technoris.iamfit.common.logger.Log;
 import za.co.technoris.iamfit.common.logger.LogView;
@@ -77,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
 //    private static final UUID UniqueID = new UUID(415452,548775);
 //
     public static final String TAG = "IAMFit";
+    File file = new File("/storage/self/primary/veryfit2.1/syn/sync_2019-08-13.txt");
 //    public static final String SAMPLE_SESSION_NAME = "Joggy jog";
 //    private static final String DATE_FORMAT = "dd/MM/yyyy HH:mm:ss";
 //
@@ -123,25 +129,57 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readFile() {
-        StringBuilder text = new StringBuilder();
+//        StringBuilder text = new StringBuilder();
 //        SportDataItem sportDataItem = new SportDataItem();
-        File file = new File("/storage/self/primary/veryfit2.1/syn/sync_2019-08-15.txt");
+//        List<SportDataItem> sportDataItemList;
         BufferedReader bufferedReader = null;
         try {
-            bufferedReader = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                if (line.contains("SportDataItem")) {
-                    text.append(line.substring(line.indexOf("id="), line.indexOf(' ')));
-                    Log.i(TAG, "File: " + text);
-                    text.append('\n');
-                }
+            FileInputStream fileInputStream = new FileInputStream(file);
+            bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
+            String strLine;
+            int line = 1;
+            String[] splitStr;
+            SportDataDay sportDataDay;
+            sportDataDay = new SportDataDay();
+            SleepDataItem sleepDataItem;
+            sleepDataItem = new SleepDataItem();
+            HeartRate heartRate;
+            heartRate = new HeartRate();
+            while ((strLine = bufferedReader.readLine()) != null) {
+//                if (line == 134) {
+                    if (strLine.contains("SportDataDay")) {
+//                    strLine = strLine.substring(strLine.indexOf('{' + 1), strLine.indexOf('}' - 1));
+                        splitStr = strLine.split(", ");
+                        sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
+                        sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
+                        Log.i(TAG, "Date: " + sportDataDay.getDate() + " Steps: " + sportDataDay.getTotalStepCount() + '\n');
+                    }
+                    else if (strLine.contains("SleepDataItem")) {
+                        splitStr = strLine.split(", ");
+                        sleepDataItem.setDate(Long.valueOf(splitStr[1].split("=")[1]));
+                        sleepDataItem.setSleepType(Integer.valueOf(splitStr[2].split("=")[1]));
+                        sleepDataItem.setSleepMinutes(Integer.valueOf(removeLastChar(splitStr[3].split("=")[1])));
+                        Log.i(TAG, "Date: " + sleepDataItem.getDate() + " Sleep Type: " + sleepDataItem.getSleepType() + " Sleep Minutes: " + sleepDataItem.getSleepMinutes() + '\n');
+                    }
+                    else if (strLine.contains("HeartRate")) {
+                        splitStr = strLine.split(", ");
+                        heartRate.setDate(Long.valueOf(splitStr[1].split("=")[1]));
+                        heartRate.setMinute(Integer.valueOf(splitStr[2].split("=")[1]));
+                        heartRate.setRate(Integer.valueOf(removeLastChar(splitStr[3].split("=")[1])));
+                        Log.i(TAG, "Date: " + heartRate.getDate() + " Minute: " + heartRate.getMinute() + " BPM: " + heartRate.getRate() + '\n');
+                    }
+//                }
+//                line++;
             }
             bufferedReader.close();
         }
         catch (IOException ex)
         {
             Log.e(TAG, ex.getLocalizedMessage());
+        }
+        catch (NullPointerException ex)
+        {
+            Log.e(TAG, ex.getMessage());
         }
     }
 
@@ -656,6 +694,10 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        }
 //    }
+
+    private static String removeLastChar(String str) {
+        return str.substring(0, str.length() - 1);
+    }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
