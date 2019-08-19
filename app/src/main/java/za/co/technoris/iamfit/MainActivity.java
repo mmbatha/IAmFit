@@ -5,60 +5,25 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.fitness.Fitness;
-import com.google.android.gms.fitness.FitnessActivities;
-import com.google.android.gms.fitness.FitnessOptions;
-import com.google.android.gms.fitness.data.DataPoint;
-import com.google.android.gms.fitness.data.DataSet;
-import com.google.android.gms.fitness.data.DataSource;
-import com.google.android.gms.fitness.data.DataType;
-import com.google.android.gms.fitness.data.Field;
-import com.google.android.gms.fitness.data.Session;
-import com.google.android.gms.fitness.request.DataDeleteRequest;
-import com.google.android.gms.fitness.request.SessionInsertRequest;
-import com.google.android.gms.fitness.request.SessionReadRequest;
-import com.google.android.gms.fitness.result.SessionReadResponse;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import za.co.technoris.iamfit.ble.HeartRate;
-import za.co.technoris.iamfit.ble.SleepDataItem;
+import za.co.technoris.iamfit.ble.SleepDataDay;
 import za.co.technoris.iamfit.ble.SportDataDay;
-import za.co.technoris.iamfit.ble.SportDataItem;
 import za.co.technoris.iamfit.common.logger.Log;
 import za.co.technoris.iamfit.common.logger.LogView;
 import za.co.technoris.iamfit.common.logger.LogWrapper;
@@ -66,7 +31,6 @@ import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
 
 import static java.text.DateFormat.getDateTimeInstance;
 import static java.text.DateFormat.getTimeInstance;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * This sample demonstrates how to use the Sessions API of the Google Fit platform to insert
@@ -141,8 +105,10 @@ public class MainActivity extends AppCompatActivity {
             String[] splitStr;
             SportDataDay sportDataDay;
             sportDataDay = new SportDataDay();
-            SleepDataItem sleepDataItem;
-            sleepDataItem = new SleepDataItem();
+//            SleepDataItem sleepDataItem;
+//            sleepDataItem = new SleepDataItem();
+            SleepDataDay sleepDataDay;
+            sleepDataDay = new SleepDataDay();
             HeartRate heartRate;
             heartRate = new HeartRate();
             while ((strLine = bufferedReader.readLine()) != null) {
@@ -154,12 +120,13 @@ public class MainActivity extends AppCompatActivity {
                         sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
                         Log.i(TAG, "Date: " + sportDataDay.getDate() + " Steps: " + sportDataDay.getTotalStepCount() + '\n');
                     }
-                    else if (strLine.contains("SleepDataItem")) {
+                    else if (strLine.contains("SleepDataDay")) {
                         splitStr = strLine.split(", ");
-                        sleepDataItem.setDate(Long.valueOf(splitStr[1].split("=")[1]));
-                        sleepDataItem.setSleepType(Integer.valueOf(splitStr[2].split("=")[1]));
-                        sleepDataItem.setSleepMinutes(Integer.valueOf(removeLastChar(splitStr[3].split("=")[1])));
-                        Log.i(TAG, "Date: " + sleepDataItem.getDate() + " Sleep Type: " + sleepDataItem.getSleepType() + " Sleep Minutes: " + sleepDataItem.getSleepMinutes() + '\n');
+                        sleepDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
+                        sleepDataDay.setEndTimeHour(Integer.valueOf(splitStr[1].split("=")[1]));
+                        sleepDataDay.setEndTimeMinute(Integer.valueOf(splitStr[2].split("=")[1]));
+                        sleepDataDay.setTotalSleepMinutes(Integer.valueOf(splitStr[3].split("=")[1]));
+                        Log.i(TAG, "Date: " + sleepDataDay.getDate() + " End Time: " + sleepDataDay.getEndTimeHour() + ":" + sleepDataDay.getEndTimeMinute() + " Sleep Minutes: " + sleepDataDay.getTotalSleepMinutes() + '\n');
                     }
                     else if (strLine.contains("HeartRate")) {
                         splitStr = strLine.split(", ");
