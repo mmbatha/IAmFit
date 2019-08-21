@@ -53,7 +53,6 @@ public class HeartRate {
     }
 
     public String toString() {
-        return "HeartRate{id=" + this._id + ", date=" + this._date + ", minute=" + this._minute
-                + ", rate=" + this._rate + '}';
+        return "Date: " + this._date + " Rate: " + this._rate + " BPM\n";
     }
 }

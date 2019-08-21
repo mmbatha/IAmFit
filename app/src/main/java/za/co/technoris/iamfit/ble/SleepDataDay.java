@@ -152,11 +152,6 @@ public class SleepDataDay implements Parcelable {
     }
 
     public String toString() {
-        return "SleepDataDay{date=" + this._date + ", endTimeHour=" + this._endTimeHour
-                + ", endTimeMinute=" + this._endTimeMinute + ", totalSleepMinutes="
-                + this._totalSleepMinutes + ", lightSleepCount=" + this._lightSleepCount
-                + ", deepSleepCount=" + this._deepSleepCount + ", awakeCount=" + this._awakeCount
-                + ", lightSleepMinutes=" + this._lightSleepMinutes + ", deepSleepMinutes="
-                + this._deepSleepMinutes + '}';
+        return "Date: " + this._date + " End Time: " + this._endTimeHour + ":" + this._endTimeMinute + " Sleep Minutes: " + this._totalSleepMinutes + '\n';
     }
 }
