@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
 //    private static final UUID UniqueID = new UUID(415452,548775);
 //
     public static final String TAG = "IAMFit";
-    File file = new File("/storage/self/primary/veryfit2.1/syn/sync_2019-08-13.txt");
+    File file = new File("/storage/self/primary/veryfit2.1/syn/sync_2019-08-20.txt");
 //    public static final String SAMPLE_SESSION_NAME = "Joggy jog";
 //    private static final String DATE_FORMAT = "dd/MM/yyyy HH:mm:ss";
 //
@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        mTextMessage = (TextView) findViewById(R.id.message);
         // This method sets up our custom logger, which will print all log messages to the device
         // screen, as well as to adb logcat.
         initializeLogging();
