@@ -58,16 +58,10 @@ public class MainActivity extends AppCompatActivity {
 //    private static final UUID UniqueID = new UUID(415452,548775);
 //
     public static final String TAG = "IAMFit";
-    File file = new File("/storage/self/primary/veryfit2.1/syn/sync_2019-08-20.txt");
+    File file = new File("sync_2019-08-13.txt");
     String path = "/storage/self/primary/veryfit2.1/syn/";
     File directory = new File(path);
     File[] filesList = directory.listFiles();
-    File log = new File("/storage/self/primary/VeryFitPro/sync/20190821.log");
-//    public static final String SAMPLE_SESSION_NAME = "Joggy jog";
-//    private static final String DATE_FORMAT = "dd/MM/yyyy HH:mm:ss";
-//
-//    private static final int REQUEST_OAUTH_REQUEST_CODE = 1;
-//    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,18 +71,13 @@ public class MainActivity extends AppCompatActivity {
         // This method sets up our custom logger, which will print all log messages to the device
         // screen, as well as to adb logcat.
         initializeLogging();
-//
-//        // When permissions are revoked the app is restarted so onCreate is sufficient to check for
-//        // permissions core to the Activity's functionality.
-//        if (hasRuntimePermissions()) {
-//            insertAndVerifySessionWrapper();
-//        } else {
-//            requestRuntimePermissions();
-//        }
-       BottomNavigationView navView = findViewById(R.id.nav_view);
+
+        BottomNavigationView navView = findViewById(R.id.nav_view);
+
         mTextMessage = findViewById(R.id.message);
+
         navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-//
+
         List<String> logs = new ArrayList<String>();
         for (File file1 : filesList) {
             logs.add(file1.getName());
@@ -112,22 +101,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-//        spinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-//            }
-//        });
-//
-//        adapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
-//
-//        spinner.setAdapter(adapter);
-//
-//        spinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-//            }
-//        });
-
         if (checkPermission()) {
             listFiles();
             readFile(path + file.getName());
@@ -138,12 +111,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void listFiles() {
-        Log.d("Files", "Path: " + path);
-        Log.d("Files", "Size: " + filesList.length);
+        Log.i("Files", "Path: " + path);
+        Log.i("Files", "Size: " + filesList.length);
         for (File file1 : filesList) {
-            Log.d("Files", "Filename: " + file1.getName());
+            Log.i("Files", "Filename: " + file1.getName());
         }
-        Log.d("Files", "\n------\n");
+        Log.i("Files", "------\n");
     }
 
     private boolean checkPermission() {
@@ -193,17 +166,8 @@ public class MainActivity extends AppCompatActivity {
                         Log.i(TAG, heartRate.toString());
                     }
             }
-            Log.i(TAG, "\n------\n");
+            Log.i(TAG, "------\n");
             bufferedReader.close();
-//            FileInputStream logInputStream = new FileInputStream(log);
-//            bufferedReader = new BufferedReader(new InputStreamReader(logInputStream));
-//            while ((strLine = bufferedReader.readLine()) != null) {
-//                if (strLine.contains("HealthSport")) {
-//                    strLine = stripData(strLine);
-//                    splitStr = strLine.split(", ");
-//
-//                }
-//            }
         }
         catch (IOException ex)
         {
@@ -215,44 +179,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    /**
-//     * A wrapper for {@link #insertAndVerifySession}. If the user account has OAuth permission,
-//     * continue to {@link #insertAndVerifySession}, else request OAuth permission for the account.
-//     */
-//    private void insertAndVerifySessionWrapper() {
-//        if (hasOAuthPermission()) {
-//            insertAndVerifySession();
-//        } else {
-//            requestOAuthPermission();
-//        }
-//    }
-//
-//    /**
-//     * Checks if user's account has OAuth permission to Fitness API.
-//     */
-//    private boolean hasOAuthPermission() {
-//        FitnessOptions fitnessOptions = getFitnessSignInOptions();
-//        return GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions);
-//    }
-//
-//    /** Launches the Google SignIn activity to request OAuth permission for the user. */
-//    private void requestOAuthPermission() {
-//        FitnessOptions fitnessOptions = getFitnessSignInOptions();
-//        GoogleSignIn.requestPermissions(
-//                this,
-//                REQUEST_OAUTH_REQUEST_CODE,
-//                GoogleSignIn.getLastSignedInAccount(this),
-//                fitnessOptions);
-//    }
-//
-//    /** Gets {@link FitnessOptions} in order to check or request OAuth permission for the user. */
-//    private FitnessOptions getFitnessSignInOptions() {
-//        return FitnessOptions.builder()
-//                .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
-//                .addDataType(DataType.TYPE_SPEED, FitnessOptions.ACCESS_WRITE)
-//                .build();
-//    }
-//
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
@@ -261,97 +187,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-//
-//    /**
-//     *  Creates and executes a {@link SessionInsertRequest} using {@link
-//     *  com.google.android.gms.fitness.SessionsClient} to insert a session.
-//     */
-//    private Task<Void> insertSession() {
-//        //First, create a new session and an insertion request.
-//        SessionInsertRequest insertRequest = insertFitnessSession();
-//
-//        // [START insert_session]
-//        // Then, invoke the Sessions API to insert the session and await the result,
-//        // which is possible here because of the AsyncTask. Always include a timeout when
-//        // calling await() to avoid hanging that can occur from the service being shutdown
-//        // because of low memory or other conditions.
-//        Log.i(TAG, "Inserting the session in the Sessions API");
-//        return Fitness.getSessionsClient(this, GoogleSignIn.getLastSignedInAccount(this))
-//                .insertSession(insertRequest)
-//                .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        // At this point, the session has been inserted and can be read.
-//                        Log.i(TAG, "Session insert was successful!");
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        Log.i(TAG, "There was a problem inserting the session: " +
-//                                e.getLocalizedMessage());
-//                    }
-//                });
-//        // [END insert_session]
-//    }
-//
-//    /**
-//     *  Creates and executes a {@link SessionReadRequest} using {@link
-//     *  com.google.android.gms.fitness.SessionsClient} to verify the insertion succeeded .
-//     */
-//    private Task<SessionReadResponse> verifySession() {
-//        // Begin by creating the query.
-//        SessionReadRequest readRequest = readFitnessSession();
-//
-//        // [START read_session]
-//        // Invoke the Sessions API to fetch the session with the query and wait for the result
-//        // of the read request. Note: Fitness.SessionsApi.readSession() requires the
-//        // ACCESS_FINE_LOCATION permission.
-//        return Fitness.getSessionsClient(this, GoogleSignIn.getLastSignedInAccount(this))
-//                .readSession(readRequest)
-//                .addOnSuccessListener(new OnSuccessListener<SessionReadResponse>() {
-//                    @Override
-//                    public void onSuccess(SessionReadResponse sessionReadResponse) {
-//                        // Get a list of the sessions that match the criteria to check the result.
-//                        List<Session> sessions = sessionReadResponse.getSessions();
-//                        Log.i(TAG, "Session read was successful. Number of returned sessions is: "
-//                                + sessions.size());
-//
-//                        for (Session session : sessions) {
-//                            // Process the session
-//                            dumpSession(session);
-//
-//                            // Process the data sets for this session
-//                            List<DataSet> dataSets = sessionReadResponse.getDataSet(session);
-//                            for (DataSet dataSet : dataSets) {
-//                                dumpDataSet(dataSet);
-//                            }
-//                        }
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        Log.i(TAG, "Failed to read session");
-//                    }
-//                });
-//        // [END read_session]
-//    }
-//
-//    /**
-//     *  Inserts and verifies a session by chaining {@link Task} form {@link #insertSession} and
-//     *  {@link #verifySession}.
-//     */
-//    private void insertAndVerifySession() {
-//
-//        insertSession().continueWithTask(new Continuation<Void, Task<SessionReadResponse>>() {
-//            @Override
-//            public Task<SessionReadResponse> then(@NonNull Task<Void> task) throws Exception {
-//                return verifySession();
-//            }
-//        });
-//    }
-//
+
 //    /**
 //     *  Creates a {@link SessionInsertRequest} for a run that consists of 10 minutes running,
 //     *  10 minutes walking, and 10 minutes of running. The request contains two {@link DataSet}s:
@@ -490,126 +326,6 @@ public class MainActivity extends AppCompatActivity {
 //
 //        return insertRequest;
 //    }
-//
-//    /**
-//     * Returns a {@link SessionReadRequest} for all speed data in the past week.
-//     */
-//    private SessionReadRequest readFitnessSession() {
-//        Log.i(TAG, "Reading History API results for session: " + SLEEP_SESSION_NAME);
-//        // [START build_read_session_request]
-//        // Set a start and end time for our query, using a start time of 1 week before this moment.
-//        long startTime1 = 0;
-//        long endTime1 = 0;
-//        try {
-//            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 00:23:00")
-//                    .getTime();
-//            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 05:52:00")
-//                    .getTime();
-//        }
-//        catch (ParseException ex)
-//        {
-//            Log.i("Error formatting the date: ", ex.getMessage());
-//        }
-//
-//        // Build a session read request
-//        SessionReadRequest readRequest = new SessionReadRequest.Builder()
-//                .setTimeInterval(startTime1, endTime1, MILLISECONDS)
-//                //                .addDataType(DataType.TYPE_SPEED)
-//                .setSessionName(SLEEP_SESSION_NAME)
-//                .build();
-//        // [END build_read_session_request]
-//
-//        return readRequest;
-//    }
-//
-//    private void dumpDataSet(DataSet dataSet) {
-//        Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
-//        for (DataPoint dp : dataSet.getDataPoints()) {
-//            DateFormat dateFormat = getTimeInstance();
-//            Log.i(TAG, "Data point:");
-//            Log.i(TAG, "\tType: " + dp.getDataType().getName());
-//            Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(MILLISECONDS)));
-//            Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(MILLISECONDS)));
-//            for(Field field : dp.getDataType().getFields()) {
-//                Log.i(TAG, "\tField: " + field.getName() +
-//                        " Value: " + dp.getValue(field));
-//            }
-//        }
-//    }
-//
-//    private void dumpSession(Session session) {
-//        DateFormat dateFormat = getDateTimeInstance();
-//        Log.i(TAG, "Data returned for Session: " + session.getName()
-//                + "\n\tDescription: " + session.getDescription()
-//                + "\n\tStart: " + dateFormat.format(session.getStartTime(MILLISECONDS))
-//                + "\n\tEnd: " + dateFormat.format(session.getEndTime(MILLISECONDS)));
-//    }
-//
-//    /**
-//     * Deletes the {@link DataSet} we inserted with our {@link Session} from the History API.
-//     * In this example, we delete all step count data for the past 24 hours. Note that this
-//     * deletion uses the History API, and not the Sessions API, since sessions are truly just time
-//     * intervals over a set of data, and the data is what we are interested in removing.
-//     */
-//    private void deleteSession() {
-//        Log.i(TAG, "Deleting today's session data for speed");
-//
-//        // Set a start and end time for our data, using a start time of 1 day before this moment.
-//        long startTime1 = 0;
-//        long endTime1 = 0;
-//        try {
-//            startTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 00:23:00")
-//                    .getTime();
-//            endTime1 = new SimpleDateFormat(DATE_FORMAT, new Locale("en", "ZA")).parse("12/08/2019 05:52:00")
-//                    .getTime();
-//        }
-//        catch (ParseException ex)
-//        {
-//            Log.i("Error formatting the date: ", ex.getMessage());
-//        }
-//
-//        // Create a delete request object, providing a data type and a time interval
-//        DataDeleteRequest request = new DataDeleteRequest.Builder()
-//                .setTimeInterval(startTime1, endTime1, MILLISECONDS)
-////                .addDataType(DataType.TYPE_SPEED)
-//                .deleteAllSessions() // Or specify a particular session here
-//                .build();
-//
-//        // Delete request using HistoryClient and specify listeners that will check the result.
-//        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
-//                .deleteData(request)
-//                .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        Log.i(TAG, "Successfully deleted today's sessions");
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        // The deletion will fail if the requesting app tries to delete data
-//                        // that it did not insert.
-//                        Log.i(TAG, "Failed to delete today's sessions");
-//                    }
-//                });
-//    }
-//
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        int id = item.getItemId();
-//        if (id == R.id.action_delete_session) {
-//            deleteSession();
-//            return true;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
 
     /**
      *  Initializes a custom log class that outputs both to in-app targets and logcat.
@@ -634,105 +350,8 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "Ready");
     }
 
-//    /** Returns the current state of the permissions needed. */
-//    private boolean hasRuntimePermissions() {
-//        int permissionState =
-//                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
-//        return permissionState == PackageManager.PERMISSION_GRANTED;
-//    }
-//
-//    private void requestRuntimePermissions() {
-//        boolean shouldProvideRationale =
-//                ActivityCompat.shouldShowRequestPermissionRationale(this,
-//                        Manifest.permission.ACCESS_FINE_LOCATION);
-//
-//        // Provide an additional rationale to the user. This would happen if the user denied the
-//        // request previously, but didn't check the "Don't ask again" checkbox.
-//        if (shouldProvideRationale) {
-//            Log.i(TAG, "Displaying permission rationale to provide additional context.");
-//            Snackbar.make(
-//                    findViewById(R.id.main_activity_view),
-//                    R.string.permission_rationale,
-//                    Snackbar.LENGTH_INDEFINITE)
-//                    .setAction(R.string.ok, new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View view) {
-//                            // Request permission
-//                            ActivityCompat.requestPermissions(MainActivity.this,
-//                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-//                                    REQUEST_PERMISSIONS_REQUEST_CODE);
-//                        }
-//                    })
-//                    .show();
-//        } else {
-//            Log.i(TAG, "Requesting permission");
-//            // Request permission. It's possible this can be auto answered if device policy
-//            // sets the permission in a given state or the user denied the permission
-//            // previously and checked "Never ask again".
-//            ActivityCompat.requestPermissions(MainActivity.this,
-//                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-//                    REQUEST_PERMISSIONS_REQUEST_CODE);
-//        }
-//    }
-//
-//    /**
-//     * Callback received when a permissions request has been completed.
-//     */
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-//                                           @NonNull int[] grantResults) {
-//        Log.i(TAG, "onRequestPermissionResult");
-//        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-//            if (grantResults.length <= 0) {
-//                // If user interaction was interrupted, the permission request is cancelled and you
-//                // receive empty arrays.
-//                Log.i(TAG, "User interaction was cancelled.");
-//            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                // Permission was granted.
-//                insertAndVerifySessionWrapper();
-//
-//            } else {
-//                // Permission denied.
-//
-//                // In this Activity we've chosen to notify the user that they
-//                // have rejected a core permission for the app since it makes the Activity useless.
-//                // We're communicating this message in a Snackbar since this is a sample app, but
-//                // core permissions would typically be best requested during a welcome-screen flow.
-//
-//                // Additionally, it is important to remember that a permission might have been
-//                // rejected without asking the user for permission (device policy or "Never ask
-//                // again" prompts). Therefore, a user interface affordance is typically implemented
-//                // when permissions are denied. Otherwise, your app could appear unresponsive to
-//                // touches or interactions which have required permissions.
-//                Snackbar.make(
-//                        findViewById(R.id.main_activity_view),
-//                        R.string.permission_denied_explanation,
-//                        Snackbar.LENGTH_INDEFINITE)
-//                        .setAction(R.string.settings, new View.OnClickListener() {
-//                            @Override
-//                            public void onClick(View view) {
-//                                // Build intent that displays the App settings screen.
-//                                Intent intent = new Intent();
-//                                intent.setAction(
-//                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-//                                Uri uri = Uri.fromParts("package",
-//                                        BuildConfig.APPLICATION_ID, null);
-//                                intent.setData(uri);
-//                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                startActivity(intent);
-//                            }
-//                        })
-//                        .show();
-//            }
-//        }
-//    }
-
     private static String removeLastChar(String str) {
         return str.substring(0, str.length() - 1);
-    }
-
-    private static String stripData(String str) {
-        return str.substring('H', '}');
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -742,29 +361,19 @@ public class MainActivity extends AppCompatActivity {
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.nav_home:
-                    showStuff();
                     mTextMessage.setText(R.string.title_home);
                     return true;
                 case R.id.nav_details:
-                    hideStuff();
                     mTextMessage.setText(R.string.title_details);
                     return true;
                 case R.id.nav_device:
-                    hideStuff();
                     mTextMessage.setText(R.string.title_device);
                     return true;
                 case R.id.nav_user:
-                    hideStuff();
                     mTextMessage.setText(R.string.title_user);
                     return true;
             }
             return false;
         }
     };
-
-    private void hideStuff() {
-    }
-
-    private void showStuff() {
-    }
 }
