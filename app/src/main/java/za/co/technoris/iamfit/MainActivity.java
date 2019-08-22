@@ -78,12 +78,18 @@ public class MainActivity extends AppCompatActivity {
 
         navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
-        List<String> logs = new ArrayList<String>();
-        for (File file1 : filesList) {
-            logs.add(file1.getName());
+        ArrayAdapter<String> adapter = null;
+        try {
+            List<String> logs = new ArrayList<String>();
+            for (File file1 : filesList) {
+                logs.add(file1.getName());
+            }
+            Collections.sort(logs);
+            adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, logs);
         }
-        Collections.sort(logs);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, logs);
+        catch (NullPointerException ex) {
+            Log.e("Files", ex.getMessage());
+        }
         Spinner spinner = findViewById(R.id.logs_spinner);
 
         spinner.setAdapter(adapter);
@@ -158,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                         sleepDataDay.setEndTimeMinute(Integer.valueOf(splitStr[2].split("=")[1]));
                         sleepDataDay.setTotalSleepMinutes(Integer.valueOf(splitStr[3].split("=")[1]));
                         Log.i(TAG, sleepDataDay.toString());
-                    } else if (strLine.contains("HeartRate")) {
+                    } else if (strLine.contains("HeartRate{")) {
                         splitStr = strLine.split(", ");
                         heartRate.setDate(Long.valueOf(splitStr[1].split("=")[1]));
                         heartRate.setMinute(Integer.valueOf(splitStr[2].split("=")[1]));
