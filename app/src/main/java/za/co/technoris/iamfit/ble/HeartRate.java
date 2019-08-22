@@ -1,6 +1,15 @@
 package za.co.technoris.iamfit.ble;
 
+import java.time.LocalTime;
+import java.util.Locale;
+
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static za.co.technoris.iamfit.helper.Helper.parseTime;
+
 public class HeartRate {
+
     private long _date;
     private Long _id;
     private int _minute;
@@ -53,6 +62,6 @@ public class HeartRate {
     }
 
     public String toString() {
-        return "Date: " + this._date + " Rate: " + this._rate + " BPM\n";
+        return "Date: " + this._date + " Time: " + parseTime(this._minute) + " Rate: " + this._rate + " BPM\n";
     }
 }

@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import za.co.technoris.iamfit.ble.HealthHeartRateItem;
@@ -91,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
         for (File file1 : filesList) {
             logs.add(file1.getName());
         }
+        Collections.sort(logs);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, logs);
         Spinner spinner = findViewById(R.id.logs_spinner);
 
@@ -137,9 +140,10 @@ public class MainActivity extends AppCompatActivity {
     private void listFiles() {
         Log.d("Files", "Path: " + path);
         Log.d("Files", "Size: " + filesList.length);
-        for (int i = 0; i < filesList.length; i++) {
-            Log.d("Files", "Filename: " + filesList[i].getName());
+        for (File file1 : filesList) {
+            Log.d("Files", "Filename: " + file1.getName());
         }
+        Log.d("Files", "\n------\n");
     }
 
     private boolean checkPermission() {
@@ -158,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readFile(String filename) {
-        Log.i(TAG, "Ready");
         BufferedReader bufferedReader = null;
         try {
             FileInputStream fileInputStream = new FileInputStream(filename);
@@ -169,9 +172,6 @@ public class MainActivity extends AppCompatActivity {
             SportDataDay sportDataDay = new SportDataDay();
             SleepDataDay sleepDataDay = new SleepDataDay();
             HeartRate heartRate = new HeartRate();
-            HealthHeartRateItem hrItem = new HealthHeartRateItem();
-            HealthSleep healthSleep = new HealthSleep();
-            HealthSport healthSport = new HealthSport();
             while ((strLine = bufferedReader.readLine()) != null) {
                     if (strLine.contains("SportDataDay")) {
                         splitStr = strLine.split(", ");
@@ -193,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.i(TAG, heartRate.toString());
                     }
             }
+            Log.i(TAG, "\n------\n");
             bufferedReader.close();
 //            FileInputStream logInputStream = new FileInputStream(log);
 //            bufferedReader = new BufferedReader(new InputStreamReader(logInputStream));
