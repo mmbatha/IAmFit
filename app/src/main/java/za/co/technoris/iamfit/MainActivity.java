@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,19 +20,14 @@ import android.widget.Toast;
 
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
-import com.google.android.gms.fitness.data.DataType;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -41,9 +35,6 @@ import java.util.Locale;
 
 import javax.sql.DataSource;
 
-import za.co.technoris.iamfit.ble.HealthHeartRateItem;
-import za.co.technoris.iamfit.ble.HealthSleep;
-import za.co.technoris.iamfit.ble.HealthSport;
 import za.co.technoris.iamfit.ble.HeartRate;
 import za.co.technoris.iamfit.ble.SleepDataDay;
 import za.co.technoris.iamfit.ble.SportDataDay;
@@ -51,9 +42,6 @@ import za.co.technoris.iamfit.common.logger.Log;
 import za.co.technoris.iamfit.common.logger.LogView;
 import za.co.technoris.iamfit.common.logger.LogWrapper;
 import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
-
-import static java.text.DateFormat.getDateTimeInstance;
-import static java.text.DateFormat.getTimeInstance;
 
 /**
  * This sample demonstrates how to use the Sessions API of the Google Fit platform to insert
