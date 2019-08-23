@@ -19,16 +19,27 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.fitness.data.DataPoint;
+import com.google.android.gms.fitness.data.DataSet;
+import com.google.android.gms.fitness.data.DataType;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import javax.sql.DataSource;
 
 import za.co.technoris.iamfit.ble.HealthHeartRateItem;
 import za.co.technoris.iamfit.ble.HealthSleep;
@@ -57,11 +68,16 @@ public class MainActivity extends AppCompatActivity {
     private TextView mTextMessage;
 //    private static final UUID UniqueID = new UUID(415452,548775);
 //
-    public static final String TAG = "IAMFit";
+public static final String TAG = "IAMFit";
+    public static final String FILES_TAG = "Files";
+public static final Locale enZA = new Locale("en", "ZA");
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", enZA);
+    public static final SimpleDateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd", enZA);
     File file = new File("sync_2019-08-13.txt");
     String path = "/storage/self/primary/veryfit2.1/syn/";
     File directory = new File(path);
     File[] filesList = directory.listFiles();
+    String selectedLog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,13 +113,13 @@ public class MainActivity extends AppCompatActivity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                String selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
+                selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
                 readFile(path + selectedLog);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-
+                selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
             }
         });
 
@@ -117,16 +133,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void listFiles() {
-        Log.i("Files", "Path: " + path);
-        Log.i("Files", "Size: " + filesList.length);
+        Log.i(FILES_TAG, "Path: " + path);
+        Log.i(FILES_TAG, "Size: " + filesList.length);
         for (File file1 : filesList) {
-            Log.i("Files", "Filename: " + file1.getName());
+            Log.i(FILES_TAG, "Filename: " + file1.getName());
         }
-        Log.i("Files", "------\n");
+        Log.i(FILES_TAG, "------\n");
     }
 
     private boolean checkPermission() {
-        int result = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
+        int result = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
         if (result == PackageManager.PERMISSION_GRANTED)
             return true;
         else
@@ -142,7 +158,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void readFile(String filename) {
         BufferedReader bufferedReader = null;
+        Date date;
         try {
+            selectedLog = extractDate((String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem());
             FileInputStream fileInputStream = new FileInputStream(filename);
             bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
             String strLine;
@@ -151,12 +169,21 @@ public class MainActivity extends AppCompatActivity {
             SportDataDay sportDataDay = new SportDataDay();
             SleepDataDay sleepDataDay = new SleepDataDay();
             HeartRate heartRate = new HeartRate();
+            long endTime;
+            long startTime;
+            DataSource dataSource;
+            int stepCountDelta;
+            DataSet dataSet;
+            DataPoint dataPoint;
             while ((strLine = bufferedReader.readLine()) != null) {
+                if (strLine.contains(selectedLog.replace("-",""))) {
                     if (strLine.contains("SportDataDay")) {
                         splitStr = strLine.split(", ");
                         sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
                         sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
                         Log.i(TAG, sportDataDay.toString());
+//                        startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime();
+//                        endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime();
                     } else if (strLine.contains("SleepDataDay")) {
                         splitStr = strLine.split(", ");
                         sleepDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
@@ -170,7 +197,9 @@ public class MainActivity extends AppCompatActivity {
                         heartRate.setMinute(Integer.valueOf(splitStr[2].split("=")[1]));
                         heartRate.setRate(Integer.valueOf(removeLastChar(splitStr[3].split("=")[1])));
                         Log.i(TAG, heartRate.toString());
+
                     }
+                }
             }
             Log.i(TAG, "------\n");
             bufferedReader.close();
@@ -183,6 +212,9 @@ public class MainActivity extends AppCompatActivity {
         {
             Log.e(TAG, ex.getMessage());
         }
+//        catch (ParseException ex) {
+//            Log.e(TAG, ex.getMessage());
+//        }
     }
 
     @Override
@@ -358,6 +390,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static String removeLastChar(String str) {
         return str.substring(0, str.length() - 1);
+    }
+
+    private static String extractDate(String str) {
+        return str.substring(str.indexOf('2'), str.length() - 4);
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
