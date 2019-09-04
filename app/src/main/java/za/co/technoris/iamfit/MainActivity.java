@@ -66,6 +66,7 @@ import za.co.technoris.iamfit.common.logger.LogWrapper;
 import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
 
 import static java.text.DateFormat.getTimeInstance;
+import static za.co.technoris.iamfit.helper.Helper.parseTime;
 
 /**
  * This sample demonstrates how to use the Sessions API of the Google Fit platform to insert
@@ -78,7 +79,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_OAUTH_REQUEST_CODE = 1;
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
     private static final String STEP_SESSION_NAME = "Daily Steps";
+    private static final String SLEEP_SESSION_NAME = "Nightly Sleep";
     private static final UUID UniqueID = new UUID(154646, 354984);
+    public static final Locale enZA = new Locale("en", "ZA");
+    private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd HH:mm:ss", enZA);
 
     //
 //    private static final String SLEEP_SESSION_NAME = "Rest";
@@ -87,9 +91,8 @@ public class MainActivity extends AppCompatActivity {
 //
 public static final String TAG = "IAMFit";
     public static final String FILES_TAG = "Files";
-public static final Locale enZA = new Locale("en", "ZA");
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", enZA);
-    public static final SimpleDateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd", enZA);
+    public static final SimpleDateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd hh:mm", enZA);
     File file = new File("sync_2019-08-13.txt");
     String path = "/storage/self/primary/veryfit2.1/syn/";
     File directory = new File(path);
@@ -108,11 +111,11 @@ public static final Locale enZA = new Locale("en", "ZA");
         // screen, as well as to adb logcat.
         initializeLogging();
 
-        BottomNavigationView navView = findViewById(R.id.nav_view);
+//        BottomNavigationView navView = findViewById(R.id.nav_view);
 
         mTextMessage = findViewById(R.id.message);
 
-        navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+//        navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         ArrayAdapter<String> adapter = null;
         try {
@@ -194,12 +197,6 @@ public static final Locale enZA = new Locale("en", "ZA");
             String strLine;
             int line = 1;
             String[] splitStr;
-            long endTime;
-            long startTime;
-            DataSource dataSource;
-            int stepCountDelta;
-            DataSet dataSet;
-            DataPoint dataPoint;
             while ((strLine = bufferedReader.readLine()) != null) {
                 if (strLine.contains(selectedLog.replace("-",""))) {
                     if (strLine.contains("SportDataDay")) {
@@ -207,14 +204,6 @@ public static final Locale enZA = new Locale("en", "ZA");
                         sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
                         sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
                         Log.i(TAG, sportDataDay.toString());
-//                        insertAndVerifySessionWrapper();
-                        // When permissions are revoked the app is restarted so here is sufficient to check for
-                        // permissions core to the Activity's functionality
-                        if (hasRuntimePermissions()) {
-                            insertAndVerifySessionWrapper();
-                        } else {
-                            requestRuntimePermissions();
-                        }
                     } else if (strLine.contains("SleepDataDay")) {
                         splitStr = strLine.split(", ");
                         sleepDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
@@ -222,6 +211,13 @@ public static final Locale enZA = new Locale("en", "ZA");
                         sleepDataDay.setEndTimeMinute(Integer.valueOf(splitStr[2].split("=")[1]));
                         sleepDataDay.setTotalSleepMinutes(Integer.valueOf(splitStr[3].split("=")[1]));
                         Log.i(TAG, sleepDataDay.toString());
+                        // When permissions are revoked the app is restarted so here is sufficient to check for
+                        // permissions core to the Activity's functionality
+                        if (hasRuntimePermissions()) {
+                            insertAndVerifySessionWrapper();
+                        } else {
+                            requestRuntimePermissions();
+                        }
                     } else if (strLine.contains("HeartRate{")) {
                         splitStr = strLine.split(", ");
                         heartRate.setDate(Long.valueOf(splitStr[1].split("=")[1]));
@@ -281,8 +277,8 @@ public static final Locale enZA = new Locale("en", "ZA");
     /** Gets {@Link FitnessOptions} in order to check or request OAuth permission for the user. */
     private FitnessOptions getFitnessSignInOptions() {
         return FitnessOptions.builder()
-                .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
-//                .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
+//                .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
+                .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
 //                .addDataType(DataType.TYPE_SPEED, FitnessOptions.ACCESS_WRITE)
                 .build();
     }
@@ -429,56 +425,55 @@ public static final Locale enZA = new Locale("en", "ZA");
 //        long endTime = cal.getTimeInMillis();
 //        cal.add(Calendar.WEEK_OF_MONTH, -2);
 //        long startTime = cal.getTimeInMillis();
-        String sDate1 = sportDataDay.getDate() + " 00:00:00";
-        String sDate2 = sportDataDay.getDate() + " 23:00:00";
+        String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd HH:mm:ss", enZA);
-        DataSource dataSource;
-        int stepCountDelta;
-        DataSet dataSet;
-//        DataPoint dataPoint;
+//        DataSource dataSource;
+//        int stepCountDelta;
+//        DataSet dataSet;
+////        DataPoint dataPoint;
         SessionInsertRequest sessionInsertRequest = null;
 
         try {
             // Set a start and end time for our data, using a start time of 1 hour before this moment.
 //            startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime() / 1000;
 //            endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime() / 1000;
-        long startTime = formatter.parse(sDate1).getTime();
-        long endTime = formatter.parse(sDate2).getTime();
+            long endTime = formatter.parse(sDate1).getTime();
+            long startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
 
-            // Create a data source
-            dataSource = new DataSource.Builder()
-                    .setAppPackageName(this)
-                    .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
-                    .setStreamName(TAG + " - step count")
-                    .setType(DataSource.TYPE_RAW)
-                    .build();
+//            // Create a data source
+//            dataSource = new DataSource.Builder()
+//                    .setAppPackageName(this)
+//                    .setDataType(DataType.TYPE_ACTIVITY_SEGMENT)
+//                    .setStreamName(TAG + " - step count")
+//                    .setType(DataSource.TYPE_RAW)
+//                    .build();
 
-            // Create a data set
-            stepCountDelta = sportDataDay.getTotalStepCount();
-            dataSet = DataSet.create(dataSource);
+//            // Create a data set
+//            stepCountDelta = sportDataDay.getTotalStepCount();
+//            dataSet = DataSet.create(dataSource);
 
-            // For each data point, specify a start time, end time, and the data value -- in this case,
-            // the number of new steps.
-            DataPoint dataPoint =
-                    dataSet.createDataPoint().setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
-            dataPoint.getValue(Field.FIELD_STEPS).setInt(stepCountDelta);
-            dataSet.add(dataPoint);
+//            // For each data point, specify a start time, end time, and the data value -- in this case,
+//            // the number of new steps.
+//            DataPoint dataPoint =
+//                    dataSet.createDataPoint().setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+//            dataPoint.getValue(Field.FIELD_STEPS).setInt(stepCountDelta);
+//            dataSet.add(dataPoint);
 
             // [START build_insert_session_request]
             // Create a session with metadata about the activity.
             Session session = new Session.Builder()
-                    .setName(STEP_SESSION_NAME)
-                    .setDescription("Steps recorded for " + sportDataDay.getDate())
+                    .setName(SLEEP_SESSION_NAME)
+                    .setDescription("Sleep recorded for " + sleepDataDay.getDate())
                     .setIdentifier(UniqueID.toString())
                     .setStartTime(startTime, TimeUnit.MILLISECONDS)
                     .setEndTime(endTime, TimeUnit.MILLISECONDS)
+                    .setActivity(FitnessActivities.SLEEP)
                     .build();
 
             // Build a session insert request
             sessionInsertRequest = new SessionInsertRequest.Builder()
                     .setSession(session)
-                    .addDataSet(dataSet)
+//                    .addDataSet(dataSet)
                     .build();
             // [END build_insert_session_request]
         }
@@ -493,15 +488,16 @@ public static final Locale enZA = new Locale("en", "ZA");
      * Returns a {@Link SessionReadRequest} for steps taken in the last day
      */
     private SessionReadRequest readFitnessSession() {
-        Log.i(TAG, "Reading History API results for session: " + STEP_SESSION_NAME);
+        Log.i(TAG, "Reading History API results for session: " + SLEEP_SESSION_NAME);
         // [START build_read_session_request]
         // Set a start and end time for the query, using a start time of 1 day before this moment.
+        String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
         long startTime = 0;
         long endTime = 0;
         try {
             // Set a start and end time for our data, using a start time of 1 day before this moment.
-            startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime();
-            endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime();
+            endTime = formatter.parse(sDate1).getTime();
+            startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
         }
         catch (ParseException ex)
         {
@@ -511,8 +507,8 @@ public static final Locale enZA = new Locale("en", "ZA");
         // Build a session read request
         SessionReadRequest readRequest = new SessionReadRequest.Builder()
                 .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                .read(DataType.TYPE_STEP_COUNT_DELTA)
-                .setSessionName(STEP_SESSION_NAME)
+//                .read(DataType.TYPE_STEP_COUNT_DELTA)
+                .setSessionName(SLEEP_SESSION_NAME)
                 .build();
         // [END build_read_session_request]
 
@@ -551,13 +547,14 @@ public static final Locale enZA = new Locale("en", "ZA");
     private void deleteSession() {
         Log.i(TAG, "Deleting the day's session data for steps");
 
+        String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
         // Set a start and end time for our data, using the given start time
         long startTime = 0;
         long endTime = 0;
         try {
             // Set a start and end time for our data, using a start time of 1 day before this moment.
-            startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime();
-            endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime();
+            endTime = formatter.parse(sDate1).getTime();
+            startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
         }
         catch (ParseException ex)
         {
@@ -567,7 +564,7 @@ public static final Locale enZA = new Locale("en", "ZA");
         // Create a delete request object, providing the data type and a time interval
         DataDeleteRequest dataDeleteRequest = new DataDeleteRequest.Builder()
                 .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+//                .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
                 .deleteAllSessions()
                 .build();
 
@@ -604,7 +601,7 @@ public static final Locale enZA = new Locale("en", "ZA");
         MessageOnlyLogFilter msgFilter = new MessageOnlyLogFilter();
         logWrapper.setNext(msgFilter);
         // On screen logging via a customized TextView.
-        LogView logView = (LogView) findViewById(R.id.sample_logview);
+        LogView logView = findViewById(R.id.sample_logview);
 
         // Fixing this lint errors adds logic without benefit.
         //noinspection AndroidLintDeprecation
@@ -716,26 +713,26 @@ public static final Locale enZA = new Locale("en", "ZA");
         return str.substring(str.indexOf('2'), str.length() - 4);
     }
 
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.nav_home:
-                    mTextMessage.setText(R.string.title_home);
-                    return true;
-                case R.id.nav_details:
-                    mTextMessage.setText(R.string.title_details);
-                    return true;
-                case R.id.nav_device:
-                    mTextMessage.setText(R.string.title_device);
-                    return true;
-                case R.id.nav_user:
-                    mTextMessage.setText(R.string.title_user);
-                    return true;
-            }
-            return false;
-        }
-    };
+//    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+//            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+//
+//        @Override
+//        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+//            switch (item.getItemId()) {
+//                case R.id.nav_home:
+//                    mTextMessage.setText(R.string.title_home);
+//                    return true;
+//                case R.id.nav_details:
+//                    mTextMessage.setText(R.string.title_details);
+//                    return true;
+//                case R.id.nav_device:
+//                    mTextMessage.setText(R.string.title_device);
+//                    return true;
+//                case R.id.nav_user:
+//                    mTextMessage.setText(R.string.title_user);
+//                    return true;
+//            }
+//            return false;
+//        }
+//    };
 }
