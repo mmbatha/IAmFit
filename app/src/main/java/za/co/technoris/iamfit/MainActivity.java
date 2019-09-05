@@ -6,12 +6,16 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -21,6 +25,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.FitnessActivities;
 import com.google.android.gms.fitness.FitnessOptions;
+import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataSource;
@@ -28,10 +33,14 @@ import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.data.Session;
 import com.google.android.gms.fitness.request.DataDeleteRequest;
+import com.google.android.gms.fitness.request.DataReadRequest;
+import com.google.android.gms.fitness.request.DataUpdateRequest;
 import com.google.android.gms.fitness.request.SessionInsertRequest;
 import com.google.android.gms.fitness.request.SessionReadRequest;
+import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.SessionReadResponse;
 import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -45,6 +54,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -60,7 +70,8 @@ import za.co.technoris.iamfit.common.logger.LogView;
 import za.co.technoris.iamfit.common.logger.LogWrapper;
 import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
 
-import static java.text.DateFormat.getTimeInstance;
+import static java.text.DateFormat.getDateInstance;
+import static java.text.DateFormat.getDateTimeInstance;
 import static za.co.technoris.iamfit.helper.Helper.parseTime;
 
 /**
@@ -81,9 +92,9 @@ public class MainActivity extends AppCompatActivity {
     File directory = new File(path);
     File[] filesList = directory.listFiles();
     String selectedLog;
-    SportDataDay sportDataDay = new SportDataDay();
+    static SportDataDay sportDataDay = new SportDataDay();
     SleepDataDay sleepDataDay = new SleepDataDay();
-    HeartRate heartRate = new HeartRate();
+    static HeartRate heartRate = new HeartRate();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +150,13 @@ public class MainActivity extends AppCompatActivity {
                         sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
                         sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
                         Log.i(TAG, sportDataDay.toString());
+                        // When permissions are revoked the app is restarted so here is sufficient to check for
+                        // permissions core to the Activity's functionality
+                        if (hasRuntimePermissions()) {
+                            insertAndVerifySteps();
+                        } else {
+                            requestRuntimePermissions();
+                        }
                     } else if (strLine.contains("SleepDataDay")) {
                         splitStr = strLine.split(", ");
                         sleepDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
@@ -159,7 +177,11 @@ public class MainActivity extends AppCompatActivity {
                         heartRate.setMinute(Integer.valueOf(splitStr[2].split("=")[1]));
                         heartRate.setRate(Integer.valueOf(removeLastChar(splitStr[3].split("=")[1])));
                         Log.i(TAG, heartRate.toString());
-
+                        if (hasRuntimeHRPermissions()) {
+                            insertandVerifyHR();
+                        } else {
+                            requestRuntimeHRPermissions();
+                        }
                     }
                 }
             }
@@ -174,6 +196,493 @@ public class MainActivity extends AppCompatActivity {
         {
             Log.e(TAG, ex.getMessage());
         }
+    }
+
+    private void insertandVerifyHR() {
+        insertHRData()
+            .continueWithTask(
+                    new Continuation<Void, Task<DataReadResponse>>() {
+                        @Override
+                        public Task<DataReadResponse> then(@NonNull Task<Void> task) throws Exception {
+                            // Read history of HR data inserted
+                            return readHistoryHRData();
+                        }
+                    });
+    }
+
+    private Task<Void> insertHRData() {
+        // Create a new dataset and insertion request.
+        DataSet dataSet = insertFitnessHRData();
+
+        // Then, invoke the History API to insert the data.
+        Log.i(TAG, "Inserting the HR dataset in the History API.");
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .insertData(dataSet)
+                .addOnCompleteListener(
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    // At this point, the data has been inserted and can be read.
+                                    Log.i(TAG, "HR Data insert was successful!");
+                                } else {
+                                    Log.e(TAG, "There was a problem inserting the HR dataset.", task.getException());
+                                }
+                            }
+                        });
+    }
+
+    /**
+     * Asynchronous task to read the history data. When the task succeeds, it will print out the data.
+     */
+    private Task<DataReadResponse> readHistoryHRData() {
+        // Begin by creating the query.
+        DataReadRequest readRequest = queryFitnessHRData();
+
+        // Invoke the History API to fetch the data with the query
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readData(readRequest)
+                .addOnSuccessListener(
+                        new OnSuccessListener<DataReadResponse>() {
+                            @Override
+                            public void onSuccess(DataReadResponse dataReadResponse) {
+                                // For the sake of the sample, we'll print the data so we can see what we just
+                                // added. In general, logging fitness information should be avoided for privacy
+                                // reasons.
+//                                printData(dataReadResponse);
+                                Log.i(TAG, "Would print out the data...");
+                            }
+                        })
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.e(TAG, "There was a problem reading the data.", e);
+                            }
+                        });
+    }
+
+    /**
+     * Creates and returns a {@link DataSet} of step count data for insertion using the History API.
+     */
+    private DataSet insertFitnessHRData() {
+        Log.i(TAG, "Creating a new HR data insert request.");
+DataSet dataSet = null;
+        // [START build_insert_data_request]
+        // Set a start and end time for our data, using a start time of 1 hour before this moment.
+        try {
+            // [START build_insert_data_request]
+            // Set a start and end time for our data, using a start time of 1 hour before this moment.
+            String stepsDate = heartRate.getDate() + " " + parseTime(heartRate.getMinute());
+//            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            long endTime = formatter.parse(stepsDate).getTime();
+//            long startTime = formatter.parse(stepsDate1).getTime();
+
+        // Create a data source
+        DataSource dataSource =
+                new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_HEART_RATE_BPM)
+                        .setStreamName(TAG + " - hr count")
+                        .setType(DataSource.TYPE_RAW)
+                        .build();
+
+        // Create a data set
+        float hRate = (float)heartRate.getRate();
+        dataSet = DataSet.create(dataSource);
+        // For each data point, specify a start time, end time, and the data value -- in this case,
+        // the number of new steps.
+        DataPoint dataPoint =
+                dataSet.createDataPoint().setTimeInterval(0, endTime, TimeUnit.MILLISECONDS);
+        dataPoint.getValue(Field.FIELD_BPM).setFloat(hRate);
+        dataSet.add(dataPoint);
+        // [END build_insert_data_request]
+        }
+        catch (ParseException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        return dataSet;
+    }
+
+    /** Returns a {@link DataReadRequest} for all heart rate changes in the past day. */
+    public static DataReadRequest queryFitnessHRData() {
+        // [START build_read_data_request]
+        // Setting a start and end date using a range of 2 days before this moment.
+        DataReadRequest readRequest = null;
+        try {
+            // [START build_insert_data_request]
+            // Set a start and end time for our data, using a start time of 1 hour before this moment.
+            String stepsDate = heartRate.getDate() + " " + parseTime(heartRate.getMinute());
+//            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            long endTime = formatter.parse(stepsDate).getTime();
+//            long startTime = formatter.parse(stepsDate1).getTime();
+
+        java.text.DateFormat dateFormat = getDateTimeInstance();
+//        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
+        Log.i(TAG, "Range Minute: " + dateFormat.format(endTime));
+
+        readRequest =
+                new DataReadRequest.Builder()
+                        // The data request can specify multiple data types to return, effectively
+                        // combining multiple data queries into one call.
+                        // In this example, it's very unlikely that the request is for several hundred
+                        // datapoints each consisting of a few steps and a timestamp.  The more likely
+                        // scenario is wanting to see how many steps were walked per day, for 7 days.
+                        .aggregate(DataType.TYPE_HEART_RATE_BPM, DataType.AGGREGATE_HEART_RATE_SUMMARY)
+                        // Analogous to a "Group By" in SQL, defines how data should be aggregated.
+                        // bucketByTime allows for a time span, whereas bucketBySession would allow
+                        // bucketing by "sessions", which would need to be defined in code.
+                        .bucketByTime(1, TimeUnit.DAYS)
+                        .setTimeRange(0, endTime, TimeUnit.MILLISECONDS)
+                        .build();
+        // [END build_read_data_request]
+        }
+        catch (ParseException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        return readRequest;
+    }
+
+    /**
+     * Inserts and reads data by chaining {@link Task} from {@link #insertData()} and {@link
+     * #readHistoryData()}.
+     */
+    private void insertAndVerifySteps() {
+        insertData()
+                .continueWithTask(
+                        new Continuation<Void, Task<DataReadResponse>>() {
+                            @Override
+                            public Task<DataReadResponse> then(@NonNull Task<Void> task) throws Exception {
+                                return readHistoryData();
+                            }
+                        });
+    }
+
+    /** Creates a {@link DataSet} and inserts it into user's Google Fit history. */
+    private Task<Void> insertData() {
+        // Create a new dataset and insertion request.
+        DataSet dataSet = insertFitnessData();
+
+        // Then, invoke the History API to insert the data.
+        Log.i(TAG, "Inserting the dataset in the History API.");
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .insertData(dataSet)
+                .addOnCompleteListener(
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    // At this point, the data has been inserted and can be read.
+                                    Log.i(TAG, "Step data insert was successful!");
+                                } else {
+                                    Log.e(TAG, "There was a problem inserting the dataset.", task.getException());
+                                }
+                            }
+                        });
+    }
+
+    /**
+     * Asynchronous task to read the history data. When the task succeeds, it will print out the data.
+     */
+    private Task<DataReadResponse> readHistoryData() {
+        // Begin by creating the query.
+        DataReadRequest readRequest = queryFitnessData();
+
+        // Invoke the History API to fetch the data with the query
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readData(readRequest)
+                .addOnSuccessListener(
+                        new OnSuccessListener<DataReadResponse>() {
+                            @Override
+                            public void onSuccess(DataReadResponse dataReadResponse) {
+                                // For the sake of the sample, we'll print the data so we can see what we just
+                                // added. In general, logging fitness information should be avoided for privacy
+                                // reasons.
+                                printData(dataReadResponse);
+                            }
+                        })
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.e(TAG, "There was a problem reading the data.", e);
+                            }
+                        });
+    }
+
+    /**
+     * Creates and returns a {@link DataSet} of step count data for insertion using the History API.
+     */
+    private DataSet insertFitnessData() {
+        Log.i(TAG, "Creating a new step data insert request.");
+
+        DataSet dataSet = null;
+        try {
+        // [START build_insert_data_request]
+        // Set a start and end time for our data, using a start time of 1 hour before this moment.
+            String stepsDate = sportDataDay.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+        long endTime = formatter.parse(stepsDate).getTime();
+        long startTime = formatter.parse(stepsDate1).getTime();
+
+        // Create a data source
+        DataSource dataSource =
+                new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .setStreamName(TAG + " - step count")
+                        .setType(DataSource.TYPE_RAW)
+                        .build();
+
+        // Create a data set
+        int stepCountDelta = sportDataDay.getTotalStepCount();
+        dataSet = DataSet.create(dataSource);
+        // For each data point, specify a start time, end time, and the data value -- in this case,
+        // the number of new steps.
+        DataPoint dataPoint =
+                dataSet.createDataPoint().setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+        dataPoint.getValue(Field.FIELD_STEPS).setInt(stepCountDelta);
+        dataSet.add(dataPoint);
+        // [END build_insert_data_request]
+        }
+        catch (ParseException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+
+        return dataSet;
+    }
+
+    /** Returns a {@link DataReadRequest} for all step count changes in the past day. */
+    public static DataReadRequest queryFitnessData() {
+        // [START build_read_data_request]
+        // Setting a start and end date using a range of 1 day before this moment.
+        DataReadRequest readRequest = null;
+        try {
+            // [START build_insert_data_request]
+            // Set a start and end time for our data, using a start time of 1 hour before this moment.
+            String stepsDate = sportDataDay.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            long endTime = formatter.parse(stepsDate).getTime();
+            long startTime = formatter.parse(stepsDate1).getTime();
+
+        java.text.DateFormat dateFormat = getDateInstance();
+        Log.i(TAG, "Step Data");
+        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
+        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
+
+        readRequest =
+                new DataReadRequest.Builder()
+                        // The data request can specify multiple data types to return, effectively
+                        // combining multiple data queries into one call.
+                        // In this example, it's very unlikely that the request is for several hundred
+                        // datapoints each consisting of a few steps and a timestamp.  The more likely
+                        // scenario is wanting to see how many steps were walked per day, for 7 days.
+                        .aggregate(DataType.TYPE_STEP_COUNT_CUMULATIVE, DataType.AGGREGATE_STEP_COUNT_DELTA
+                        )
+                        // Analogous to a "Group By" in SQL, defines how data should be aggregated.
+                        // bucketByTime allows for a time span, whereas bucketBySession would allow
+                        // bucketing by "sessions", which would need to be defined in code.
+                        .bucketByTime(1, TimeUnit.DAYS)
+                        .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                        .build();
+        // [END build_read_data_request]
+        }
+        catch (ParseException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        return readRequest;
+    }
+
+    /**
+     * Logs a record of the query result. It's possible to get more constrained data sets by
+     * specifying a data source or data type, but for demonstrative purposes here's how one would dump
+     * all the data. In this sample, logging also prints to the device screen, so we can see what the
+     * query returns, but your app should not log fitness information as a privacy consideration. A
+     * better option would be to dump the data you receive to a local data directory to avoid exposing
+     * it to other applications.
+     */
+    public static void printData(DataReadResponse dataReadResult) {
+        // [START parse_read_data_result]
+        // If the DataReadRequest object specified aggregated data, dataReadResult will be returned
+        // as buckets containing DataSets, instead of just DataSets.
+        if (dataReadResult.getBuckets().size() > 0) {
+            Log.i(
+                    TAG, "Number of returned buckets of DataSets is: " + dataReadResult.getBuckets().size());
+            for (Bucket bucket : dataReadResult.getBuckets()) {
+                List<DataSet> dataSets = bucket.getDataSets();
+                for (DataSet dataSet : dataSets) {
+                    dumpDataSet(dataSet);
+                }
+            }
+        } else if (dataReadResult.getDataSets().size() > 0) {
+            Log.i(TAG, "Number of returned DataSets is: " + dataReadResult.getDataSets().size());
+            for (DataSet dataSet : dataReadResult.getDataSets()) {
+                dumpDataSet(dataSet);
+            }
+        }
+        // [END parse_read_data_result]
+    }
+    /**
+     * Deletes a {@link DataSet} from the History API. In this example, we delete all step count data
+     * for the past 24 hours.
+     */
+    private void deleteData() {
+        Log.i(TAG, "Deleting this day's step count data.");
+
+        DataDeleteRequest request = null;
+        try {
+        // [START delete_dataset]
+        // Set a start and end time for our data, using a start time of 1 day before this moment.
+
+            String stepsDate = sportDataDay.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+        long endTime = formatter.parse(stepsDate).getTime();
+        long startTime = formatter.parse(stepsDate1).getTime();
+
+        //  Create a delete request object, providing a data type and a time interval
+        request =
+                new DataDeleteRequest.Builder()
+                        .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                        .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .build();
+        }
+        catch (ParseException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+
+        // Invoke the History API with the HistoryClient object and delete request, and then
+        // specify a callback that will check the result.
+        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .deleteData(request)
+                .addOnCompleteListener(
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    Log.i(TAG, "Successfully deleted this day's step count data.");
+                                } else {
+                                    Log.e(TAG, "Failed to delete this day's step count data.", task.getException());
+                                }
+                            }
+                        });
+    }
+
+    /**
+     * Updates and reads data by chaning {@link Task} from {@link #updateData()} and {@link
+     * #readHistoryData()}.
+     */
+    private void updateAndReadData() {
+        updateData()
+                .continueWithTask(
+                        new Continuation<Void, Task<DataReadResponse>>() {
+                            @Override
+                            public Task<DataReadResponse> then(@NonNull Task<Void> task) throws Exception {
+                                return readHistoryData();
+                            }
+                        });
+    }
+
+    /**
+     * Creates a {@link DataSet},then makes a {@link DataUpdateRequest} to update step data. Then
+     * invokes the History API with the HistoryClient object and update request.
+     */
+    private Task<Void> updateData() {
+        // Create a new dataset and update request.
+        DataSet dataSet = updateFitnessData();
+        long startTime = 0;
+        long endTime = 0;
+
+        // Get the start and end times from the dataset.
+        for (DataPoint dataPoint : dataSet.getDataPoints()) {
+            startTime = dataPoint.getStartTime(TimeUnit.MILLISECONDS);
+            endTime = dataPoint.getEndTime(TimeUnit.MILLISECONDS);
+        }
+
+        // [START update_data_request]
+        Log.i(TAG, "Updating the dataset in the History API.");
+
+        DataUpdateRequest request =
+                new DataUpdateRequest.Builder()
+                        .setDataSet(dataSet)
+                        .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                        .build();
+
+        // Invoke the History API to update data.
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .updateData(request)
+                .addOnCompleteListener(
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    // At this point the data has been updated and can be read.
+                                    Log.i(TAG, "Data update was successful.");
+                                } else {
+                                    Log.e(TAG, "There was a problem updating the dataset.", task.getException());
+                                }
+                            }
+                        });
+    }
+
+    /** Creates and returns a {@link DataSet} of step count data to update. */
+    private DataSet updateFitnessData() {
+        Log.i(TAG, "Creating a new data update request.");
+DataSet dataSet = null;
+        try {
+        // [START build_update_data_request]
+        // Set a start and end time for the data that fits within the time range
+        // of the original insertion.
+
+            String stepsDate = sportDataDay.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            long endTime = formatter.parse(stepsDate).getTime();
+            long startTime = formatter.parse(stepsDate1).getTime();
+
+        // Create a data source
+        DataSource dataSource =
+                new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .setStreamName(TAG + " - step count")
+                        .setType(DataSource.TYPE_RAW)
+                        .build();
+
+        // Create a data set
+        int stepCountDelta = sportDataDay.getTotalStepCount();
+        dataSet = DataSet.create(dataSource);
+        // For each data point, specify a start time, end time, and the data value -- in this case,
+        // the number of new steps.
+        DataPoint dataPoint =
+                dataSet.createDataPoint().setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+        dataPoint.getValue(Field.FIELD_STEPS).setInt(stepCountDelta);
+        dataSet.add(dataPoint);
+        // [END build_update_data_request]
+    }
+        catch (ParseException ex) {
+        Log.e(TAG, ex.getMessage());
+    }
+
+        return dataSet;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_delete_data) {
+            deleteData();
+            return true;
+        } else if (id == R.id.action_update_data) {
+            clearLogView();
+            updateAndReadData();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     /**
@@ -209,7 +718,11 @@ public class MainActivity extends AppCompatActivity {
     /** Gets {@Link FitnessOptions} in order to check or request OAuth permission for the user. */
     private FitnessOptions getFitnessSignInOptions() {
         return FitnessOptions.builder()
+                .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE, FitnessOptions.ACCESS_WRITE)
+                .addDataType(DataType.AGGREGATE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
+                .addDataType(DataType.TYPE_HEART_RATE_BPM, FitnessOptions.ACCESS_WRITE)
                 .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
+                .addDataType(DataType.AGGREGATE_HEART_RATE_SUMMARY, FitnessOptions.ACCESS_WRITE)
                 .build();
     }
 
@@ -235,14 +748,14 @@ public class MainActivity extends AppCompatActivity {
         // which is possible here because of the AsyncTask. Always include a timeout when
         // calling await() to avoid hanging that can occur from the service being shutdown
         // because of low memory or other conditions.
-        Log.i(TAG, "Inserting the session in the Sessions API");
+        Log.i(TAG, "Inserting the sleep session in the Sessions API");
         return Fitness.getSessionsClient(this, GoogleSignIn.getLastSignedInAccount(this))
                 .insertSession(insertRequest)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
                         // At this point the session has been inserted and can be read.
-                        Log.i(TAG, "Session insert was successful!");
+                        Log.i(TAG, "Sleep session insert was successful!");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -330,13 +843,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private SessionInsertRequest insertFitnessSession() {
         Log.i(TAG, "Creating a new sleep session");
-        String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
+        String sleepDate = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
 
         SessionInsertRequest sessionInsertRequest = null;
 
         try {
             // Set a start and end time for our data
-            long endTime = formatter.parse(sDate1).getTime();
+            long endTime = formatter.parse(sleepDate).getTime();
             long startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
 
             // [START build_insert_session_request]
@@ -392,10 +905,10 @@ public class MainActivity extends AppCompatActivity {
                 .build();
     }
 
-    private void dumpDataSet(DataSet dataSet) {
+    private static void dumpDataSet(DataSet dataSet) {
         Log.i(TAG, "Data returned for Data Type: " + dataSet.getDataType().getName());
         for (DataPoint dataPoint : dataSet.getDataPoints()) {
-            DateFormat dateFormat = getTimeInstance();
+            DateFormat dateFormat = getDateTimeInstance();
             Log.i(TAG, "Data Point:");
             Log.i(TAG, "\tType: " + dataPoint.getDataType().getName());
             Log.i(TAG, "\tStart: " + dateFormat.format(dataPoint.getStartTime(TimeUnit.MILLISECONDS)));
@@ -408,7 +921,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dumpSession(Session session) {
-        DateFormat dateFormat = getTimeInstance();
+        DateFormat dateFormat = getDateTimeInstance();
         Log.i(TAG, "Data returned for Session: " + session.getName()
         + "\n\tDescription: " + session.getDescription()
         + "\n\tStart: " + dateFormat.format(session.getStartTime(TimeUnit.MILLISECONDS))
@@ -452,6 +965,13 @@ public class MainActivity extends AppCompatActivity {
         return permissionState == PackageManager.PERMISSION_GRANTED;
     }
 
+    /** Returns the current state of permissions needed. */
+    private boolean hasRuntimeHRPermissions() {
+        int permissionState =
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.BODY_SENSORS);
+        return permissionState == PackageManager.PERMISSION_GRANTED;
+    }
+
     private void requestRuntimePermissions() {
         boolean shouldProvideRationale =
                 ActivityCompat.shouldShowRequestPermissionRationale(this,
@@ -486,6 +1006,41 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void requestRuntimeHRPermissions() {
+        boolean shouldProvideRationale =
+                false;
+            shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.BODY_SENSORS);
+
+        // Provide an additional rationale to the user. This would happen if the user denied the
+        // request previously, but didn't check the "Don't ask again" checkbox.
+        if (shouldProvideRationale) {
+            Log.i(TAG, "Displaying permission rationale to provide additional context.");
+            Snackbar.make(
+                    findViewById(R.id.container),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(MainActivity.this,
+                                    new String[]{Manifest.permission.BODY_SENSORS},
+                                    55);
+                        }
+                    })
+                    .show();
+        } else {
+            Log.i(TAG, "Requesting sensor permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.BODY_SENSORS},
+                        55);
+        }
+    }
+
     /**
      * Callback received when a permissions request has been completed.
      */
@@ -501,7 +1056,6 @@ public class MainActivity extends AppCompatActivity {
             } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission was granted.
                 insertAndVerifySessionWrapper();
-
             } else {
                 // Permission denied.
 
@@ -535,6 +1089,8 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .show();
             }
+        } else if (requestCode == 55) {
+            insertandVerifyHR();
         }
     }
 
