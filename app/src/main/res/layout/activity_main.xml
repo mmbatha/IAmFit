@@ -15,48 +15,37 @@
         android:layout_marginTop="@dimen/activity_vertical_margin"
         android:text="@string/title_home"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginLeft="@dimen/activity_horizontal_margin" />
 
     <Spinner android:id="@+id/logs_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="40dp"/>
+        android:layout_marginStart="@dimen/activity_horizontal_margin"
+        android:layout_marginTop="35dp"
+        android:layout_marginLeft="16dp" />
 
-    <TextView
-        android:id="@+id/title_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="80dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:text="@string/intro_text" />
     <ScrollView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="120dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_below="@id/logs_spinner"
+        android:layout_marginStart="@dimen/activity_horizontal_margin"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="70dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_below="@id/title_text_view">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
         <za.co.technoris.iamfit.common.logger.LogView
             android:id="@+id/sample_logview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:scrollbars="vertical" /></ScrollView>
-    <!--<android.support.design.widget.BottomNavigationView-->
-        <!--android:id="@+id/nav_view"-->
-        <!--android:layout_width="0dp"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_marginStart="0dp"-->
-        <!--android:layout_marginEnd="0dp"-->
-        <!--android:background="?android:attr/windowBackground"-->
-        <!--app:layout_constraintBottom_toBottomOf="parent"-->
-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
-        <!--app:layout_constraintRight_toRightOf="parent"-->
-        <!--app:menu="@menu/bottom_nav_menu" />-->
+            android:scrollbars="vertical" />
+    </ScrollView>
 
 </android.support.constraint.ConstraintLayout>

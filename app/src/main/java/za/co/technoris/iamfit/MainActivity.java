@@ -9,17 +9,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.fitness.Fitness;
@@ -49,7 +45,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -75,25 +70,13 @@ import static za.co.technoris.iamfit.helper.Helper.parseTime;
  * represent data in a Session, as well as how to use ActivitySegments.
  */
 public class MainActivity extends AppCompatActivity {
-    private static final int PERMISSION_REQUEST_CODE = 100;
     private static final int REQUEST_OAUTH_REQUEST_CODE = 1;
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-    private static final String STEP_SESSION_NAME = "Daily Steps";
     private static final String SLEEP_SESSION_NAME = "Nightly Sleep";
     private static final UUID UniqueID = new UUID(154646, 354984);
     public static final Locale enZA = new Locale("en", "ZA");
     private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd HH:mm:ss", enZA);
-
-    //
-//    private static final String SLEEP_SESSION_NAME = "Rest";
-    private TextView mTextMessage;
-//    private static final UUID UniqueID = new UUID(415452,548775);
-//
-public static final String TAG = "IAMFit";
-    public static final String FILES_TAG = "Files";
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", enZA);
-    public static final SimpleDateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd hh:mm", enZA);
-    File file = new File("sync_2019-08-13.txt");
+    public static final String TAG = "IAMFit";
     String path = "/storage/self/primary/veryfit2.1/syn/";
     File directory = new File(path);
     File[] filesList = directory.listFiles();
@@ -106,20 +89,13 @@ public static final String TAG = "IAMFit";
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mTextMessage = (TextView) findViewById(R.id.message);
         // This method sets up our custom logger, which will print all log messages to the device
         // screen, as well as to adb logcat.
         initializeLogging();
 
-//        BottomNavigationView navView = findViewById(R.id.nav_view);
-
-        mTextMessage = findViewById(R.id.message);
-
-//        navView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
         ArrayAdapter<String> adapter = null;
         try {
-            List<String> logs = new ArrayList<String>();
+            List<String> logs = new ArrayList<>();
             for (File file1 : filesList) {
                 logs.add(file1.getName());
             }
@@ -136,6 +112,7 @@ public static final String TAG = "IAMFit";
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                clearLogView();
                 selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
                 readFile(path + selectedLog);
             }
@@ -145,57 +122,15 @@ public static final String TAG = "IAMFit";
                 selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
             }
         });
-        // When permissions are revoked the app is restarted so here is sufficient to check for
-        // permissions core to the Activity's functionality
-//        if (hasRuntimePermissions()) {
-//            insertAndVerifySessionWrapper();
-//        }
-//        else
-//            {
-//            requestRuntimePermissions();
-//        }
-//        if (checkPermission()) {
-//            listFiles();
-//            readFile(path + file.getName());
-//        }
-//        else {
-//            requestPermission();
-//        }
-    }
-
-    private void listFiles() {
-        Log.i(FILES_TAG, "Path: " + path);
-        Log.i(FILES_TAG, "Size: " + filesList.length);
-        for (File file1 : filesList) {
-            Log.i(FILES_TAG, "Filename: " + file1.getName());
-        }
-        Log.i(FILES_TAG, "------\n");
-    }
-
-    private boolean checkPermission() {
-        int result = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (result == PackageManager.PERMISSION_GRANTED)
-            return true;
-        else
-            return false;
-    }
-
-    private void requestPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE))
-            Toast.makeText(MainActivity.this, "Write External Storage permission allows us to read files. Please allow this permission in App Settings.", Toast.LENGTH_LONG).show();
-        else
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
     }
 
     private void readFile(String filename) {
-        BufferedReader bufferedReader = null;
-//        Date date;
+        BufferedReader bufferedReader;
         try {
             selectedLog = extractDate((String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem());
             FileInputStream fileInputStream = new FileInputStream(filename);
             bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
             String strLine;
-            int line = 1;
             String[] splitStr;
             while ((strLine = bufferedReader.readLine()) != null) {
                 if (strLine.contains(selectedLog.replace("-",""))) {
@@ -239,9 +174,6 @@ public static final String TAG = "IAMFit";
         {
             Log.e(TAG, ex.getMessage());
         }
-//        catch (ParseException ex) {
-//            Log.e(TAG, ex.getMessage());
-//        }
     }
 
     /**
@@ -277,30 +209,9 @@ public static final String TAG = "IAMFit";
     /** Gets {@Link FitnessOptions} in order to check or request OAuth permission for the user. */
     private FitnessOptions getFitnessSignInOptions() {
         return FitnessOptions.builder()
-//                .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
                 .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
-//                .addDataType(DataType.TYPE_SPEED, FitnessOptions.ACCESS_WRITE)
                 .build();
     }
-
-//    private SessionInsertRequest insertFitnessSession(SportDataDay sportDataDay) {
-//        long endTime;
-//        long startTime;
-//        DataSource dataSource;
-//        int stepCountDelta;
-//        DataSet dataSet;
-//        DataPoint dataPoint;
-//
-//        try {
-//                        startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime();
-//                        endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime();
-//
-//                        dataSource = new Da
-//        }
-//        catch (ParseException ex) {
-//            Log.e(TAG, ex.getMessage());
-//        }
-//    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -394,7 +305,7 @@ public static final String TAG = "IAMFit";
     private void insertAndVerifySession() {
         insertSession().continueWithTask(new Continuation<Void, Task<SessionReadResponse>>() {
             @Override
-            public Task<SessionReadResponse> then(@NonNull Task<Void> task) throws Exception {
+            public Task<SessionReadResponse> then(@NonNull Task<Void> task) {
                 return verifySession();
             }
         });
@@ -419,45 +330,14 @@ public static final String TAG = "IAMFit";
      */
     private SessionInsertRequest insertFitnessSession() {
         Log.i(TAG, "Creating a new sleep session");
-//        Calendar cal = Calendar.getInstance(enZA);
-//        Date now = new Date();
-//        cal.setTime(now);
-//        long endTime = cal.getTimeInMillis();
-//        cal.add(Calendar.WEEK_OF_MONTH, -2);
-//        long startTime = cal.getTimeInMillis();
         String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
 
-//        DataSource dataSource;
-//        int stepCountDelta;
-//        DataSet dataSet;
-////        DataPoint dataPoint;
         SessionInsertRequest sessionInsertRequest = null;
 
         try {
-            // Set a start and end time for our data, using a start time of 1 hour before this moment.
-//            startTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 00:00:00").getTime() / 1000;
-//            endTime = LOG_DATE_FORMAT.parse(sportDataDay.getDate() + " 23:00:00").getTime() / 1000;
+            // Set a start and end time for our data
             long endTime = formatter.parse(sDate1).getTime();
             long startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
-
-//            // Create a data source
-//            dataSource = new DataSource.Builder()
-//                    .setAppPackageName(this)
-//                    .setDataType(DataType.TYPE_ACTIVITY_SEGMENT)
-//                    .setStreamName(TAG + " - step count")
-//                    .setType(DataSource.TYPE_RAW)
-//                    .build();
-
-//            // Create a data set
-//            stepCountDelta = sportDataDay.getTotalStepCount();
-//            dataSet = DataSet.create(dataSource);
-
-//            // For each data point, specify a start time, end time, and the data value -- in this case,
-//            // the number of new steps.
-//            DataPoint dataPoint =
-//                    dataSet.createDataPoint().setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
-//            dataPoint.getValue(Field.FIELD_STEPS).setInt(stepCountDelta);
-//            dataSet.add(dataPoint);
 
             // [START build_insert_session_request]
             // Create a session with metadata about the activity.
@@ -473,7 +353,6 @@ public static final String TAG = "IAMFit";
             // Build a session insert request
             sessionInsertRequest = new SessionInsertRequest.Builder()
                     .setSession(session)
-//                    .addDataSet(dataSet)
                     .build();
             // [END build_insert_session_request]
         }
@@ -505,14 +384,12 @@ public static final String TAG = "IAMFit";
         }
 
         // Build a session read request
-        SessionReadRequest readRequest = new SessionReadRequest.Builder()
-                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-//                .read(DataType.TYPE_STEP_COUNT_DELTA)
-                .setSessionName(SLEEP_SESSION_NAME)
-                .build();
         // [END build_read_session_request]
 
-        return readRequest;
+        return new SessionReadRequest.Builder()
+                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                .setSessionName(SLEEP_SESSION_NAME)
+                .build();
     }
 
     private void dumpDataSet(DataSet dataSet) {
@@ -538,56 +415,12 @@ public static final String TAG = "IAMFit";
         + "\n\tEnd: " + dateFormat.format(session.getEndTime(TimeUnit.MILLISECONDS)));
     }
 
-    /**
-     * Deletes the {@Link DataSet} inserted with {@Link Session} from the History API.
-     * In this example, we delete all step count data for the stipulated time. Note that this
-     * deletion uses the History API, and not the Sessions API, since sessions are truly just time
-     * intervals over a set of data, and the data is what we are interested in removing.
-     */
-    private void deleteSession() {
-        Log.i(TAG, "Deleting the day's session data for steps");
 
-        String sDate1 = sleepDataDay.getDate() + " " + parseTime(sleepDataDay.getEndTimeHour(), sleepDataDay.getEndTimeMinute());
-        // Set a start and end time for our data, using the given start time
-        long startTime = 0;
-        long endTime = 0;
-        try {
-            // Set a start and end time for our data, using a start time of 1 day before this moment.
-            endTime = formatter.parse(sDate1).getTime();
-            startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
-        }
-        catch (ParseException ex)
-        {
-            Log.e(TAG, ex.getLocalizedMessage());
-        }
-
-        // Create a delete request object, providing the data type and a time interval
-        DataDeleteRequest dataDeleteRequest = new DataDeleteRequest.Builder()
-                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-//                .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
-                .deleteAllSessions()
-                .build();
-
-        // Delete request using HistoryClient and specify listeners that will check the result.
-        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
-                .deleteData(dataDeleteRequest)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.i(TAG, "Successfully deleted the day's session");
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        // The deletion will fail if the requesting app tries to delete data
-                        // that it did not insert.
-                        Log.i(TAG, "Failed to delete the session");
-                    }
-                });
+    /** Clears all the logging message in the LogView. */
+    private void clearLogView() {
+        LogView logView = findViewById(R.id.sample_logview);
+        logView.setText("Ready");
     }
-
-
 
     /**
      *  Initializes a custom log class that outputs both to in-app targets and logcat.
@@ -629,7 +462,7 @@ public static final String TAG = "IAMFit";
         if (shouldProvideRationale) {
             Log.i(TAG, "Displaying permission rationale to provide additional context.");
             Snackbar.make(
-                    findViewById(R.id.main_activity_view),
+                    findViewById(R.id.container),
                     R.string.permission_rationale,
                     Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.ok, new View.OnClickListener() {
@@ -683,7 +516,7 @@ public static final String TAG = "IAMFit";
                 // when permissions are denied. Otherwise, your app could appear unresponsive to
                 // touches or interactions which have required permissions.
                 Snackbar.make(
-                        findViewById(R.id.main_activity_view),
+                        findViewById(R.id.container),
                         R.string.permission_denied_explanation,
                         Snackbar.LENGTH_INDEFINITE)
                         .setAction(R.string.settings, new View.OnClickListener() {
@@ -712,27 +545,4 @@ public static final String TAG = "IAMFit";
     private static String extractDate(String str) {
         return str.substring(str.indexOf('2'), str.length() - 4);
     }
-
-//    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-//            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-//
-//        @Override
-//        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-//            switch (item.getItemId()) {
-//                case R.id.nav_home:
-//                    mTextMessage.setText(R.string.title_home);
-//                    return true;
-//                case R.id.nav_details:
-//                    mTextMessage.setText(R.string.title_details);
-//                    return true;
-//                case R.id.nav_device:
-//                    mTextMessage.setText(R.string.title_device);
-//                    return true;
-//                case R.id.nav_user:
-//                    mTextMessage.setText(R.string.title_user);
-//                    return true;
-//            }
-//            return false;
-//        }
-//    };
 }
