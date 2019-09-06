@@ -99,6 +99,6 @@ public class SportDataDay implements Parcelable {
     }
 
     public String toString() {
-        return "Date: " + this._date + " Steps: " + this._totalStepCount + '\n';
+        return " Steps: " + this._totalStepCount;
     }
 }

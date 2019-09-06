@@ -3,10 +3,6 @@ package za.co.technoris.iamfit.ble;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static za.co.technoris.iamfit.helper.Helper.parseTime;
 
 public class SleepDataDay implements Parcelable {
@@ -158,6 +154,6 @@ public class SleepDataDay implements Parcelable {
     }
 
     public String toString() {
-        return "Date: " + this._date + " End Time: " + parseTime(this._endTimeHour, this._endTimeMinute) + " Sleep Minutes: " + this._totalSleepMinutes + '\n';
+        return "Sleep ended: " + parseTime(this._endTimeHour, this._endTimeMinute) + " Sleep duration: " + parseTime(this._totalSleepMinutes);
     }
 }

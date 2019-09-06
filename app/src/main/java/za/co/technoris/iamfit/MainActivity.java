@@ -54,6 +54,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -65,6 +66,7 @@ import java.util.concurrent.TimeUnit;
 import za.co.technoris.iamfit.ble.HeartRate;
 import za.co.technoris.iamfit.ble.SleepDataDay;
 import za.co.technoris.iamfit.ble.SportDataDay;
+import za.co.technoris.iamfit.ble.SportDataItem;
 import za.co.technoris.iamfit.common.logger.Log;
 import za.co.technoris.iamfit.common.logger.LogView;
 import za.co.technoris.iamfit.common.logger.LogWrapper;
@@ -83,6 +85,7 @@ import static za.co.technoris.iamfit.helper.Helper.parseTime;
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_OAUTH_REQUEST_CODE = 1;
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+    private static final int BODY_SENSORS_PERMISSIONS_REQUEST_CODE = 55;
     private static final String SLEEP_SESSION_NAME = "Nightly Sleep";
     private static final UUID UniqueID = new UUID(154646, 354984);
     public static final Locale enZA = new Locale("en", "ZA");
@@ -93,8 +96,10 @@ public class MainActivity extends AppCompatActivity {
     File[] filesList = directory.listFiles();
     String selectedLog;
     static SportDataDay sportDataDay = new SportDataDay();
+    static SportDataItem sportDataItem = new SportDataItem();
     SleepDataDay sleepDataDay = new SleepDataDay();
     static HeartRate heartRate = new HeartRate();
+    static int hrLine = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
             for (File file1 : filesList) {
                 logs.add(file1.getName());
             }
-            Collections.sort(logs);
+            Collections.sort(logs, Collections.reverseOrder());
             adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, logs);
         }
         catch (NullPointerException ex) {
@@ -143,8 +148,17 @@ public class MainActivity extends AppCompatActivity {
             bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
             String strLine;
             String[] splitStr;
+            int line = 1;
             while ((strLine = bufferedReader.readLine()) != null) {
                 if (strLine.contains(selectedLog.replace("-",""))) {
+                    if (strLine.contains("SportDataItem")){
+                        splitStr = strLine.split(", ");
+                        sportDataItem.setDate(Long.valueOf(splitStr[1].split("=")[1]));
+                        sportDataItem.setHour(Integer.valueOf(splitStr[2].split("=")[1]));
+                        sportDataItem.setMinute(Integer.valueOf(splitStr[3].split("=")[1]));
+                        sportDataItem.setStepCount(Integer.valueOf(splitStr[5].split("=")[1]));
+                        Log.i(TAG, sportDataItem.toString());
+                    }
                     if (strLine.contains("SportDataDay")) {
                         splitStr = strLine.split(", ");
                         sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
@@ -164,14 +178,13 @@ public class MainActivity extends AppCompatActivity {
                         sleepDataDay.setEndTimeMinute(Integer.valueOf(splitStr[2].split("=")[1]));
                         sleepDataDay.setTotalSleepMinutes(Integer.valueOf(splitStr[3].split("=")[1]));
                         Log.i(TAG, sleepDataDay.toString());
-                        // When permissions are revoked the app is restarted so here is sufficient to check for
-                        // permissions core to the Activity's functionality
                         if (hasRuntimePermissions()) {
                             insertAndVerifySessionWrapper();
                         } else {
                             requestRuntimePermissions();
                         }
                     } else if (strLine.contains("HeartRate{")) {
+                        hrLine++;
                         splitStr = strLine.split(", ");
                         heartRate.setDate(Long.valueOf(splitStr[1].split("=")[1]));
                         heartRate.setMinute(Integer.valueOf(splitStr[2].split("=")[1]));
@@ -208,6 +221,10 @@ public class MainActivity extends AppCompatActivity {
                             return readHistoryHRData();
                         }
                     });
+        // At this point, the data has been inserted and can be read.
+        if (hrLine == 1) {
+            Log.i(TAG, "HR Data insert was successful!");
+        }
     }
 
     private Task<Void> insertHRData() {
@@ -215,7 +232,9 @@ public class MainActivity extends AppCompatActivity {
         DataSet dataSet = insertFitnessHRData();
 
         // Then, invoke the History API to insert the data.
-        Log.i(TAG, "Inserting the HR dataset in the History API.");
+        if (hrLine == 1) {
+            Log.i(TAG, "Inserting the HR dataset in the History API.");
+        }
         return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
                 .insertData(dataSet)
                 .addOnCompleteListener(
@@ -224,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                             public void onComplete(@NonNull Task<Void> task) {
                                 if (task.isSuccessful()) {
                                     // At this point, the data has been inserted and can be read.
-                                    Log.i(TAG, "HR Data insert was successful!");
+//                                    Log.i(TAG, "HR Data insert was successful!");
                                 } else {
                                     Log.e(TAG, "There was a problem inserting the HR dataset.", task.getException());
                                 }
@@ -250,7 +269,6 @@ public class MainActivity extends AppCompatActivity {
                                 // added. In general, logging fitness information should be avoided for privacy
                                 // reasons.
 //                                printData(dataReadResponse);
-                                Log.i(TAG, "Would print out the data...");
                             }
                         })
                 .addOnFailureListener(
@@ -266,7 +284,9 @@ public class MainActivity extends AppCompatActivity {
      * Creates and returns a {@link DataSet} of step count data for insertion using the History API.
      */
     private DataSet insertFitnessHRData() {
-        Log.i(TAG, "Creating a new HR data insert request.");
+        if (hrLine == 1) {
+            Log.i(TAG, "Creating a new HR data insert request.");
+        }
 DataSet dataSet = null;
         // [START build_insert_data_request]
         // Set a start and end time for our data, using a start time of 1 hour before this moment.
@@ -319,7 +339,9 @@ DataSet dataSet = null;
 
         java.text.DateFormat dateFormat = getDateTimeInstance();
 //        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range Minute: " + dateFormat.format(endTime));
+            if (hrLine == 1) {
+                Log.i(TAG, "Range Minute: " + dateFormat.format(endTime));
+            }
 
         readRequest =
                 new DataReadRequest.Builder()
@@ -364,7 +386,7 @@ DataSet dataSet = null;
         DataSet dataSet = insertFitnessData();
 
         // Then, invoke the History API to insert the data.
-        Log.i(TAG, "Inserting the dataset in the History API.");
+        Log.i(TAG, "Inserting the steps dataset in the History API.");
         return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
                 .insertData(dataSet)
                 .addOnCompleteListener(
@@ -373,9 +395,9 @@ DataSet dataSet = null;
                             public void onComplete(@NonNull Task<Void> task) {
                                 if (task.isSuccessful()) {
                                     // At this point, the data has been inserted and can be read.
-                                    Log.i(TAG, "Step data insert was successful!");
+                                    Log.i(TAG, "Steps data insert was successful!");
                                 } else {
-                                    Log.e(TAG, "There was a problem inserting the dataset.", task.getException());
+                                    Log.e(TAG, "There was a problem inserting the steps dataset.", task.getException());
                                 }
                             }
                         });
@@ -421,7 +443,7 @@ DataSet dataSet = null;
         // [START build_insert_data_request]
         // Set a start and end time for our data, using a start time of 1 hour before this moment.
             String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
         long endTime = formatter.parse(stepsDate).getTime();
         long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -429,7 +451,7 @@ DataSet dataSet = null;
         DataSource dataSource =
                 new DataSource.Builder()
                         .setAppPackageName(this)
-                        .setDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
                         .setStreamName(TAG + " - step count")
                         .setType(DataSource.TYPE_RAW)
                         .build();
@@ -461,7 +483,7 @@ DataSet dataSet = null;
             // [START build_insert_data_request]
             // Set a start and end time for our data, using a start time of 1 hour before this moment.
             String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
             long endTime = formatter.parse(stepsDate).getTime();
             long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -477,7 +499,7 @@ DataSet dataSet = null;
                         // In this example, it's very unlikely that the request is for several hundred
                         // datapoints each consisting of a few steps and a timestamp.  The more likely
                         // scenario is wanting to see how many steps were walked per day, for 7 days.
-                        .aggregate(DataType.TYPE_STEP_COUNT_CUMULATIVE, DataType.AGGREGATE_STEP_COUNT_DELTA
+                        .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA
                         )
                         // Analogous to a "Group By" in SQL, defines how data should be aggregated.
                         // bucketByTime allows for a time span, whereas bucketBySession would allow
@@ -535,7 +557,7 @@ DataSet dataSet = null;
         // Set a start and end time for our data, using a start time of 1 day before this moment.
 
             String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
         long endTime = formatter.parse(stepsDate).getTime();
         long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -543,7 +565,7 @@ DataSet dataSet = null;
         request =
                 new DataDeleteRequest.Builder()
                         .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                        .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
                         .build();
         }
         catch (ParseException ex) {
@@ -634,7 +656,7 @@ DataSet dataSet = null;
         // of the original insertion.
 
             String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 00:00:00";
+            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
             long endTime = formatter.parse(stepsDate).getTime();
             long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -642,7 +664,7 @@ DataSet dataSet = null;
         DataSource dataSource =
                 new DataSource.Builder()
                         .setAppPackageName(this)
-                        .setDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE)
+                        .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
                         .setStreamName(TAG + " - step count")
                         .setType(DataSource.TYPE_RAW)
                         .build();
@@ -718,7 +740,7 @@ DataSet dataSet = null;
     /** Gets {@Link FitnessOptions} in order to check or request OAuth permission for the user. */
     private FitnessOptions getFitnessSignInOptions() {
         return FitnessOptions.builder()
-                .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE, FitnessOptions.ACCESS_WRITE)
+                .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
                 .addDataType(DataType.AGGREGATE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
                 .addDataType(DataType.TYPE_HEART_RATE_BPM, FitnessOptions.ACCESS_WRITE)
                 .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
@@ -1026,7 +1048,7 @@ DataSet dataSet = null;
                             // Request permission
                             ActivityCompat.requestPermissions(MainActivity.this,
                                     new String[]{Manifest.permission.BODY_SENSORS},
-                                    55);
+                                    BODY_SENSORS_PERMISSIONS_REQUEST_CODE);
                         }
                     })
                     .show();
@@ -1037,7 +1059,7 @@ DataSet dataSet = null;
             // previously and checked "Never ask again".
                 ActivityCompat.requestPermissions(MainActivity.this,
                         new String[]{Manifest.permission.BODY_SENSORS},
-                        55);
+                        BODY_SENSORS_PERMISSIONS_REQUEST_CODE);
         }
     }
 
@@ -1089,7 +1111,7 @@ DataSet dataSet = null;
                         })
                         .show();
             }
-        } else if (requestCode == 55) {
+        } else if (requestCode == BODY_SENSORS_PERMISSIONS_REQUEST_CODE) {
             insertandVerifyHR();
         }
     }
