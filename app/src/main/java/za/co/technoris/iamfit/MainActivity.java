@@ -6,11 +6,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -54,8 +52,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -65,7 +61,6 @@ import java.util.concurrent.TimeUnit;
 
 import za.co.technoris.iamfit.ble.HeartRate;
 import za.co.technoris.iamfit.ble.SleepDataDay;
-import za.co.technoris.iamfit.ble.SportDataDay;
 import za.co.technoris.iamfit.ble.SportDataItem;
 import za.co.technoris.iamfit.common.logger.Log;
 import za.co.technoris.iamfit.common.logger.LogView;
@@ -74,6 +69,7 @@ import za.co.technoris.iamfit.common.logger.MessageOnlyLogFilter;
 
 import static java.text.DateFormat.getDateInstance;
 import static java.text.DateFormat.getDateTimeInstance;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static za.co.technoris.iamfit.helper.Helper.parseTime;
 
 /**
@@ -95,11 +91,11 @@ public class MainActivity extends AppCompatActivity {
     File directory = new File(path);
     File[] filesList = directory.listFiles();
     String selectedLog;
-    static SportDataDay sportDataDay = new SportDataDay();
     static SportDataItem sportDataItem = new SportDataItem();
     SleepDataDay sleepDataDay = new SleepDataDay();
     static HeartRate heartRate = new HeartRate();
     static int hrLine = 0;
+    int stepLine = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +126,8 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 clearLogView();
                 selectedLog = (String)((Spinner)findViewById(R.id.logs_spinner)).getSelectedItem();
+                hrLine = 0;
+                stepLine = 0;
                 readFile(path + selectedLog);
             }
 
@@ -148,29 +146,27 @@ public class MainActivity extends AppCompatActivity {
             bufferedReader = new BufferedReader(new InputStreamReader(fileInputStream));
             String strLine;
             String[] splitStr;
-            int line = 1;
+            int line = 0;
             while ((strLine = bufferedReader.readLine()) != null) {
                 if (strLine.contains(selectedLog.replace("-",""))) {
                     if (strLine.contains("SportDataItem")){
+                        stepLine++;
                         splitStr = strLine.split(", ");
                         sportDataItem.setDate(Long.valueOf(splitStr[1].split("=")[1]));
                         sportDataItem.setHour(Integer.valueOf(splitStr[2].split("=")[1]));
                         sportDataItem.setMinute(Integer.valueOf(splitStr[3].split("=")[1]));
                         sportDataItem.setStepCount(Integer.valueOf(splitStr[5].split("=")[1]));
                         Log.i(TAG, sportDataItem.toString());
-                    }
-                    if (strLine.contains("SportDataDay")) {
-                        splitStr = strLine.split(", ");
-                        sportDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
-                        sportDataDay.setTotalStepCount(Integer.valueOf(splitStr[1].split("=")[1]));
-                        Log.i(TAG, sportDataDay.toString());
                         // When permissions are revoked the app is restarted so here is sufficient to check for
                         // permissions core to the Activity's functionality
-                        if (hasRuntimePermissions()) {
-                            insertAndVerifySteps();
-                        } else {
-                            requestRuntimePermissions();
+                        if (line > 0) {
+                            if (hasRuntimePermissions()) {
+                                insertAndVerifySteps();
+                            } else {
+                                requestRuntimePermissions();
+                            }
                         }
+                        line++;
                     } else if (strLine.contains("SleepDataDay")) {
                         splitStr = strLine.split(", ");
                         sleepDataDay.setDate(Long.valueOf(splitStr[0].split("=")[1]));
@@ -378,6 +374,9 @@ DataSet dataSet = null;
                                 return readHistoryData();
                             }
                         });
+        if (stepLine == 2) {
+            Log.i(TAG, "Steps data insert was successful!");
+        }
     }
 
     /** Creates a {@link DataSet} and inserts it into user's Google Fit history. */
@@ -386,7 +385,9 @@ DataSet dataSet = null;
         DataSet dataSet = insertFitnessData();
 
         // Then, invoke the History API to insert the data.
-        Log.i(TAG, "Inserting the steps dataset in the History API.");
+        if (stepLine == 2) {
+            Log.i(TAG, "Inserting the steps dataset in the History API.");
+        }
         return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
                 .insertData(dataSet)
                 .addOnCompleteListener(
@@ -395,7 +396,7 @@ DataSet dataSet = null;
                             public void onComplete(@NonNull Task<Void> task) {
                                 if (task.isSuccessful()) {
                                     // At this point, the data has been inserted and can be read.
-                                    Log.i(TAG, "Steps data insert was successful!");
+//                                    Log.i(TAG, "Steps data insert was successful!");
                                 } else {
                                     Log.e(TAG, "There was a problem inserting the steps dataset.", task.getException());
                                 }
@@ -420,7 +421,7 @@ DataSet dataSet = null;
                                 // For the sake of the sample, we'll print the data so we can see what we just
                                 // added. In general, logging fitness information should be avoided for privacy
                                 // reasons.
-                                printData(dataReadResponse);
+//                                printData(dataReadResponse);
                             }
                         })
                 .addOnFailureListener(
@@ -436,19 +437,20 @@ DataSet dataSet = null;
      * Creates and returns a {@link DataSet} of step count data for insertion using the History API.
      */
     private DataSet insertFitnessData() {
-        Log.i(TAG, "Creating a new step data insert request.");
+        if (stepLine == 2) {
+            Log.i(TAG, "Creating a new step data insert request.");
+        }
 
         DataSet dataSet = null;
         try {
-        // [START build_insert_data_request]
-        // Set a start and end time for our data, using a start time of 1 hour before this moment.
-            String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
-        long endTime = formatter.parse(stepsDate).getTime();
-        long startTime = formatter.parse(stepsDate1).getTime();
+            // [START build_insert_data_request]
+            // Set a start and end time for our data, using a start time of 1 hour before this moment.
+            String stepsDate = sportDataItem.getDate() + " " + parseTime(sportDataItem.getHour(), sportDataItem.getMinute());
+            long endTime = formatter.parse(stepsDate).getTime();
+            long startTime = new Date(endTime - MINUTES.toMillis(14)).getTime();
 
-        // Create a data source
-        DataSource dataSource =
+            // Create a data source
+            DataSource dataSource =
                 new DataSource.Builder()
                         .setAppPackageName(this)
                         .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
@@ -457,7 +459,7 @@ DataSet dataSet = null;
                         .build();
 
         // Create a data set
-        int stepCountDelta = sportDataDay.getTotalStepCount();
+        int stepCountDelta = sportDataItem.getStepCount();
         dataSet = DataSet.create(dataSource);
         // For each data point, specify a start time, end time, and the data value -- in this case,
         // the number of new steps.
@@ -482,15 +484,15 @@ DataSet dataSet = null;
         try {
             // [START build_insert_data_request]
             // Set a start and end time for our data, using a start time of 1 hour before this moment.
-            String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
+            String stepsDate = sportDataItem.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataItem.getDate() + " 05:00:00";
             long endTime = formatter.parse(stepsDate).getTime();
             long startTime = formatter.parse(stepsDate1).getTime();
 
-        java.text.DateFormat dateFormat = getDateInstance();
-        Log.i(TAG, "Step Data");
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
+//        java.text.DateFormat dateFormat = getDateTimeInstance();
+//        Log.i(TAG, "Step Data");
+//        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
+//        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
 
         readRequest =
                 new DataReadRequest.Builder()
@@ -556,8 +558,8 @@ DataSet dataSet = null;
         // [START delete_dataset]
         // Set a start and end time for our data, using a start time of 1 day before this moment.
 
-            String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
+            String stepsDate = sportDataItem.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataItem.getDate() + " 05:00:00";
         long endTime = formatter.parse(stepsDate).getTime();
         long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -655,8 +657,8 @@ DataSet dataSet = null;
         // Set a start and end time for the data that fits within the time range
         // of the original insertion.
 
-            String stepsDate = sportDataDay.getDate() + " 23:00:00";
-            String stepsDate1 = sportDataDay.getDate() + " 05:00:00";
+            String stepsDate = sportDataItem.getDate() + " 23:00:00";
+            String stepsDate1 = sportDataItem.getDate() + " 05:00:00";
             long endTime = formatter.parse(stepsDate).getTime();
             long startTime = formatter.parse(stepsDate1).getTime();
 
@@ -670,7 +672,7 @@ DataSet dataSet = null;
                         .build();
 
         // Create a data set
-        int stepCountDelta = sportDataDay.getTotalStepCount();
+        int stepCountDelta = sportDataItem.getStepCount();
         dataSet = DataSet.create(dataSource);
         // For each data point, specify a start time, end time, and the data value -- in this case,
         // the number of new steps.
@@ -872,7 +874,7 @@ DataSet dataSet = null;
         try {
             // Set a start and end time for our data
             long endTime = formatter.parse(sleepDate).getTime();
-            long startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
+            long startTime = new Date(endTime - MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
 
             // [START build_insert_session_request]
             // Create a session with metadata about the activity.
@@ -911,7 +913,7 @@ DataSet dataSet = null;
         try {
             // Set a start and end time for our data, using a start time of 1 day before this moment.
             endTime = formatter.parse(sDate1).getTime();
-            startTime = new Date(endTime - TimeUnit.MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
+            startTime = new Date(endTime - MINUTES.toMillis(sleepDataDay.getTotalSleepMinutes())).getTime();
         }
         catch (ParseException ex)
         {
