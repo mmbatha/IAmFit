@@ -150,16 +150,17 @@ public class MainActivity extends AppCompatActivity {
             while ((strLine = bufferedReader.readLine()) != null) {
                 if (strLine.contains(selectedLog.replace("-",""))) {
                     if (strLine.contains("SportDataItem")){
-                        stepLine++;
                         splitStr = strLine.split(", ");
                         sportDataItem.setDate(Long.valueOf(splitStr[1].split("=")[1]));
                         sportDataItem.setHour(Integer.valueOf(splitStr[2].split("=")[1]));
                         sportDataItem.setMinute(Integer.valueOf(splitStr[3].split("=")[1]));
                         sportDataItem.setStepCount(Integer.valueOf(splitStr[5].split("=")[1]));
-                        Log.i(TAG, sportDataItem.toString());
                         // When permissions are revoked the app is restarted so here is sufficient to check for
                         // permissions core to the Activity's functionality
-                        if (line > 0) {
+                        int stepCount = sportDataItem.getStepCount();
+                        if (line > 0 && stepCount > 0) {
+                            stepLine++;
+                            Log.i(TAG, sportDataItem.toString());
                             if (hasRuntimePermissions()) {
                                 insertAndVerifySteps();
                             } else {
