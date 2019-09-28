@@ -863,7 +863,7 @@ public class MainActivity extends AppCompatActivity {
             Session session = new Session.Builder()
                     .setName(SLEEP_SESSION_NAME)
                     .setDescription("Sleep recorded for " + sleepDataDay.getDate())
-                    .setIdentifier(UniqueID.toString())
+                    .setIdentifier(getString(R.string.app_name) + " " + System.currentTimeMillis())
                     .setStartTime(startTime, TimeUnit.MILLISECONDS)
                     .setEndTime(endTime, TimeUnit.MILLISECONDS)
                     .setActivity(FitnessActivities.SLEEP)
